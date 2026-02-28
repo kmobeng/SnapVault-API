@@ -7,9 +7,10 @@ import {
   uploadPhotoService,
 } from "../services/photo.service";
 import { createError } from "../utils/error.util";
+import { AuthRequest } from "./auth.controller";
 
 export const uploadPhoto = async (
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
@@ -35,7 +36,7 @@ export const uploadPhoto = async (
 };
 
 export const getAllPhotos = async (
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
@@ -59,7 +60,7 @@ export const getAllPhotos = async (
 };
 
 export const getSinglePhoto = async (
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
@@ -82,7 +83,7 @@ export const getSinglePhoto = async (
 };
 
 export const updatePhoto = async (
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
@@ -102,7 +103,7 @@ export const updatePhoto = async (
 };
 
 export const deletePhoto = async (
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {

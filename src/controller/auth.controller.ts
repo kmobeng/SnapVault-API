@@ -5,13 +5,15 @@ import JWT from "jsonwebtoken";
 import User, { IUser } from "../model/user.model";
 import sendEmail from "../utils/email.util";
 import crypto from "crypto";
-
-declare global {
-  namespace Express {
-    interface Request {
-      user: IUser;
-    }
-  }
+import passport from "passport";
+import { Strategy as GoogleStrategy } from "passport-google-oauth2";
+ 
+export interface AuthRequest extends Request {
+  user: {
+    _id: string;
+    email: string;
+    role: string
+  };
 }
 
 interface JWTPayload {
@@ -110,7 +112,7 @@ export const protect = async (
 };
 
 export const restrictTo = (...roles: string[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!roles.includes(req.user.role)) {
       return next(
         createError("You do not have permission to accesss this action", 403)
@@ -186,7 +188,6 @@ export const resetPassword = async (
       throw createError("Token is required", 400);
     }
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
-    console.log(hashedToken);
 
     const user = await User.findOne({
       passwordResetToken: hashedToken,
@@ -208,3 +209,17 @@ export const resetPassword = async (
     next(error);
   }
 };
+
+
+passport.use(new GoogleStrategy({
+    clientID:     process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: "http://localhost:4000/auth/google/callback",
+    passReqToCallback   : true
+  },
+  function(request, accessToken, refreshToken, profile, done) {
+    User.findOrCreate({ googleId: profile.id }, function (err, user) {
+      return done(err, user);
+    });
+  }
+));

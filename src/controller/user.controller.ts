@@ -6,6 +6,7 @@ import {
   updateMeService,
 } from "../services/user.service";
 import { createError } from "../utils/error.util";
+import { AuthRequest } from "./auth.controller";
 
 export const getAllUsers = async (
   req: Request,
@@ -38,7 +39,7 @@ export const getSingleUser = async (
 };
 
 export const getMe = async (
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
@@ -47,7 +48,7 @@ export const getMe = async (
 };
 
 export const updateMe = async (
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {

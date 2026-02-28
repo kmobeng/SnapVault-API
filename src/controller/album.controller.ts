@@ -7,9 +7,10 @@ import {
   updateSingleAlbumService,
 } from "../services/album.service";
 import { createError } from "../utils/error.util";
+import { AuthRequest } from "./auth.controller";
 
 export const createAlbum = async (
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
@@ -28,7 +29,7 @@ export const createAlbum = async (
 };
 
 export const getAllAlbums = async (
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
@@ -48,7 +49,7 @@ export const getAllAlbums = async (
 };
 
 export const getSingleAlbum = async (
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
@@ -67,7 +68,7 @@ export const getSingleAlbum = async (
 };
 
 export const updateSingleAlbum = async (
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
@@ -87,7 +88,7 @@ export const updateSingleAlbum = async (
 };
 
 export const deleteSingleAlbum = async (
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
