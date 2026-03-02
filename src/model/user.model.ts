@@ -1,4 +1,4 @@
-import { Document, InferSchemaType, model, Schema } from "mongoose";
+import { Document, InferSchemaType, Model, model, Schema } from "mongoose";
 import validator from "validator";
 import bcrypt from "bcrypt";
 import JWT from "jsonwebtoken";
@@ -89,7 +89,7 @@ UserSchema.methods.signToken = function () {
 
 UserSchema.methods.comparePassword = async function (
   this: IUser,
-  candidatePassword: string
+  candidatePassword: string,
 ) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
@@ -109,15 +109,18 @@ UserSchema.methods.createPasswordResetToken = function () {
     .update(resetToken)
     .digest("hex");
   console.log(resetToken, this.passwordResetToken);
-  this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+  this.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000);
 
   return resetToken;
 };
 
-export type IUser = InferSchemaType<typeof UserSchema> &
-  IUserMethods &
-  Document;
+type UserSchemaType = InferSchemaType<typeof UserSchema>;
 
-const User = model<IUser>("User", UserSchema);
+export interface IUser extends UserSchemaType, IUserMethods, Document {}
+
+type UserModel = Model<IUser>;
+
+const User = model<IUser, UserModel>("User", UserSchema);
 
 export default User;
+

@@ -7,12 +7,11 @@ import {
   updateSingleAlbumService,
 } from "../services/album.service";
 import { createError } from "../utils/error.util";
-import { AuthRequest } from "./auth.controller";
 
 export const createAlbum = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = req.user._id;
@@ -29,9 +28,9 @@ export const createAlbum = async (
 };
 
 export const getAllAlbums = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = req.params.userId || req.user._id;
@@ -49,9 +48,9 @@ export const getAllAlbums = async (
 };
 
 export const getSingleAlbum = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { albumId } = req.params;
@@ -68,9 +67,9 @@ export const getSingleAlbum = async (
 };
 
 export const updateSingleAlbum = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { albumId } = req.params;
@@ -88,9 +87,9 @@ export const updateSingleAlbum = async (
 };
 
 export const deleteSingleAlbum = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { albumId } = req.params;

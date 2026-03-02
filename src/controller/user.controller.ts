@@ -6,12 +6,11 @@ import {
   updateMeService,
 } from "../services/user.service";
 import { createError } from "../utils/error.util";
-import { AuthRequest } from "./auth.controller";
 
 export const getAllUsers = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const users = await getAllUsersService(req.query);
@@ -24,7 +23,7 @@ export const getAllUsers = async (
 export const getSingleUser = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { userId } = req.params;
@@ -39,18 +38,18 @@ export const getSingleUser = async (
 };
 
 export const getMe = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   req.params.userId = req.user._id.toString();
   next();
 };
 
 export const updateMe = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { name, username } = req.body;
@@ -64,7 +63,7 @@ export const updateMe = async (
 export const deleteUser = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { userId } = req.params;

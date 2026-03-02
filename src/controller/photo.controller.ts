@@ -7,12 +7,11 @@ import {
   uploadPhotoService,
 } from "../services/photo.service";
 import { createError } from "../utils/error.util";
-import { AuthRequest } from "./auth.controller";
 
 export const uploadPhoto = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { title, description, visibility, albumId } = req.body;
@@ -26,7 +25,7 @@ export const uploadPhoto = async (
       visibility,
       userId,
       photo,
-      albumId?.toString()
+      albumId?.toString(),
     );
 
     res.status(201).json({ status: "success", data: { photo: photoResult } });
@@ -36,16 +35,16 @@ export const uploadPhoto = async (
 };
 
 export const getAllPhotos = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const userId = req.params.userId || req.user._id.toString();
     const photos = await getAllPhotosService(
       userId,
       req.user._id.toString(),
-      req.query
+      req.query,
     );
 
     if (photos.length === 0) {
@@ -60,9 +59,9 @@ export const getAllPhotos = async (
 };
 
 export const getSinglePhoto = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { photoId } = req.params;
@@ -73,7 +72,7 @@ export const getSinglePhoto = async (
     const photo = await getSinglePhotoService(
       photoId,
       userId,
-      req.user._id.toString()
+      req.user._id.toString(),
     );
 
     res.status(200).json({ status: "success", data: photo });
@@ -83,9 +82,9 @@ export const getSinglePhoto = async (
 };
 
 export const updatePhoto = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { title, visibility } = req.body;
@@ -103,9 +102,9 @@ export const updatePhoto = async (
 };
 
 export const deletePhoto = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { photoId } = req.params;

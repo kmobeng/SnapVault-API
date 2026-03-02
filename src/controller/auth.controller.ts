@@ -5,15 +5,13 @@ import JWT from "jsonwebtoken";
 import User, { IUser } from "../model/user.model";
 import sendEmail from "../utils/email.util";
 import crypto from "crypto";
-import passport from "passport";
-import { Strategy as GoogleStrategy } from "passport-google-oauth2";
- 
-export interface AuthRequest extends Request {
-  user: {
-    _id: string;
-    email: string;
-    role: string
-  };
+
+declare global {
+  namespace Express {
+    interface Request {
+      user: IUser;
+    }
+  }
 }
 
 interface JWTPayload {
@@ -25,7 +23,7 @@ interface JWTPayload {
 export const signUp = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> => {
   try {
     const { name, email, username, password, passwordConfirm, role } = req.body;
@@ -36,7 +34,7 @@ export const signUp = async (
       username,
       password,
       passwordConfirm,
-      role
+      role,
     );
 
     const token = fetchedUser.signToken();
@@ -53,7 +51,7 @@ export const signUp = async (
 export const login = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> => {
   try {
     const { email, password } = req.body;
@@ -76,7 +74,7 @@ export const login = async (
 export const protect = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     let token: any;
@@ -112,10 +110,10 @@ export const protect = async (
 };
 
 export const restrictTo = (...roles: string[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction) => {
     if (!roles.includes(req.user.role)) {
       return next(
-        createError("You do not have permission to accesss this action", 403)
+        createError("You do not have permission to accesss this action", 403),
       );
     }
     next();
@@ -125,7 +123,7 @@ export const restrictTo = (...roles: string[]) => {
 export const forgotPassword = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { email } = req.body;
@@ -144,7 +142,7 @@ export const forgotPassword = async (
     await user.save({ validateBeforeSave: false });
 
     const resetURL = `${req.protocol}://${req.get(
-      "host"
+      "host",
     )}/api/auth/reset-password/${resetToken}`;
 
     const message = `Forgot your password?\n
@@ -179,7 +177,7 @@ If you didn't forget your password, please ignore this email.`;
 export const resetPassword = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { token } = req.params;
@@ -210,16 +208,15 @@ export const resetPassword = async (
   }
 };
 
-
-passport.use(new GoogleStrategy({
-    clientID:     process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "http://localhost:4000/auth/google/callback",
-    passReqToCallback   : true
-  },
-  function(request, accessToken, refreshToken, profile, done) {
-    User.findOrCreate({ googleId: profile.id }, function (err, user) {
-      return done(err, user);
-    });
-  }
-));
+// passport.use(new GoogleStrategy({
+//     clientID:     process.env.GOOGLE_CLIENT_ID,
+//     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+//     callbackURL: "http://localhost:4000/auth/google/callback",
+//     passReqToCallback   : true
+//   },
+//   function(request, accessToken, refreshToken, profile, done) {
+//     User.findOrCreate({ googleId: profile.id }, function (err, user) {
+//       return done(err, user);
+//     });
+//   }
+// ));
