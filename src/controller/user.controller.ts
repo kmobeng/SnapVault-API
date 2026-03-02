@@ -42,7 +42,7 @@ export const getMe = async (
   res: Response,
   next: NextFunction,
 ) => {
-  req.params.userId = req.user._id.toString();
+  req.params.userId = req.currentUser._id.toString();
   next();
 };
 
@@ -53,7 +53,11 @@ export const updateMe = async (
 ) => {
   try {
     const { name, username } = req.body;
-    const user = await updateMeService(req.user._id.toString(), name, username);
+    const user = await updateMeService(
+      req.currentUser._id.toString(),
+      name,
+      username,
+    );
     res.status(200).json({ status: "success", data: user });
   } catch (error) {
     next(error);

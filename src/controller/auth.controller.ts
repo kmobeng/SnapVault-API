@@ -9,7 +9,7 @@ import crypto from "crypto";
 declare global {
   namespace Express {
     interface Request {
-      user: IUser;
+      currentUser: IUser;
     }
   }
 }
@@ -101,7 +101,7 @@ export const protect = async (
       throw createError("Password changed. Please login again", 400);
     }
 
-    req.user = currentUser;
+    req.currentUser = currentUser;
 
     next();
   } catch (error) {
@@ -111,7 +111,7 @@ export const protect = async (
 
 export const restrictTo = (...roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (!roles.includes(req.user.role)) {
+    if (!roles.includes(req.currentUser.role)) {
       return next(
         createError("You do not have permission to accesss this action", 403),
       );

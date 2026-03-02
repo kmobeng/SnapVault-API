@@ -16,7 +16,7 @@ export const uploadPhoto = async (
   try {
     const { title, description, visibility, albumId } = req.body;
 
-    const userId = req.user._id.toString();
+    const userId = req.currentUser._id.toString();
     const photo = req.file;
 
     const photoResult = await uploadPhotoService(
@@ -40,10 +40,10 @@ export const getAllPhotos = async (
   next: NextFunction,
 ) => {
   try {
-    const userId = req.params.userId || req.user._id.toString();
+    const userId = req.params.userId || req.currentUser._id.toString();
     const photos = await getAllPhotosService(
       userId,
-      req.user._id.toString(),
+      req.currentUser._id.toString(),
       req.query,
     );
 
@@ -68,11 +68,11 @@ export const getSinglePhoto = async (
     if (!photoId) {
       throw createError("No photo id provided", 400);
     }
-    const userId = req.params.userId || req.user._id.toString();
+    const userId = req.params.userId || req.currentUser._id.toString();
     const photo = await getSinglePhotoService(
       photoId,
       userId,
-      req.user._id.toString(),
+      req.currentUser._id.toString(),
     );
 
     res.status(200).json({ status: "success", data: photo });
@@ -92,7 +92,7 @@ export const updatePhoto = async (
     if (!photoId) {
       throw createError("No photoID provided", 400);
     }
-    const userId = req.user._id.toString();
+    const userId = req.currentUser._id.toString();
     const photo = await updatePhotoService(title, visibility, photoId, userId);
 
     res.status(200).json({ status: "success", data: photo });
@@ -111,7 +111,7 @@ export const deletePhoto = async (
     if (!photoId) {
       throw createError("Please provide photoId", 400);
     }
-    const userId = req.params.userId || req.user._id.toString();
+    const userId = req.params.userId || req.currentUser._id.toString();
     const photo = await deletePhotoService(photoId, userId, req.params.role);
 
     res.status(200).json({ status: "success" });
