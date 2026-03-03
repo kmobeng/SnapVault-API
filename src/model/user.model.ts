@@ -12,7 +12,7 @@ export interface IUserMethods {
 }
 
 const UserSchema = new Schema({
-  googleId: {type:String,unique:true},
+  googleId: {type:String,unique:true,default:null},
   name: { type: String, required: [true, "name is required"] },
   email: {
     type: String,
