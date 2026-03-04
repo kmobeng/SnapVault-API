@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { protect } from "../controller/auth.controller";
 import {
   createAlbum,
   deleteSingleAlbum,
@@ -8,6 +7,7 @@ import {
   updateSingleAlbum,
 } from "../controller/album.controller";
 import { apiLimiter } from "../middleware/limiter.middleware";
+import { protect } from "../middleware/auth.middleware";
 
 const router = Router();
 router.use(protect);

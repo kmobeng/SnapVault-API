@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { protect, restrictTo } from "../controller/auth.controller";
 import {
   deleteUser,
   getAllUsers,
@@ -8,6 +7,7 @@ import {
   updateMe,
 } from "../controller/user.controller";
 import { apiLimiter } from "../middleware/limiter.middleware";
+import { protect, restrictTo } from "../middleware/auth.middleware";
 
 const router = Router();
 

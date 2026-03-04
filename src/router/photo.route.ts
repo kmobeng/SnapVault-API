@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { protect, restrictTo } from "../controller/auth.controller";
 import {
   deletePhoto,
   getAllPhotos,
@@ -10,6 +9,7 @@ import {
 import multer from "multer";
 import { apiLimiter } from "../middleware/limiter.middleware";
 import { setRole } from "../middleware/setRoleAdmin.middleware";
+import { protect, restrictTo } from "../middleware/auth.middleware";
 
 const upload = multer({ storage: multer.memoryStorage() });
 

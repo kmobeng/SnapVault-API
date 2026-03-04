@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { createError } from "../utils/error.util";
 import { loginService, signUpService } from "../services/auth.service";
-import JWT from "jsonwebtoken";
 import User, { IUser } from "../model/user.model";
 import sendEmail from "../utils/email.util";
 import crypto from "crypto";
@@ -12,12 +11,6 @@ declare global {
       currentUser: IUser;
     }
   }
-}
-
-interface JWTPayload {
-  id: string;
-  iat: number;
-  exp: number;
 }
 
 export const signUp = async (
@@ -80,59 +73,10 @@ export const login = async (
 
     res.cookie("jwt", token);
 
-    res.status(200).json({ status: "success",  data: { user } });
+    res.status(200).json({ status: "success", data: { user } });
   } catch (error) {
     next(error);
   }
-};
-
-export const protect = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    let token: any;
-
-    if (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith("Bearer")
-    ) {
-      token = req.headers.authorization.split(" ")[1];
-    }
-
-    if (!token) {
-      throw createError("You are not logged in. Please login to continue", 401);
-    }
-
-    const decoded = JWT.verify(token, process.env.JWT_SECRET!) as JWTPayload;
-    const currentUser = await User.findById(decoded.id).select("+password");
-
-    if (!currentUser) {
-      throw createError("The user with this token does not exist", 404);
-    }
-
-    if (currentUser.changedPasswordAfter(decoded.iat)) {
-      throw createError("Password changed. Please login again", 400);
-    }
-
-    req.currentUser = currentUser;
-
-    next();
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const restrictTo = (...roles: string[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    if (!roles.includes(req.currentUser.role)) {
-      return next(
-        createError("You do not have permission to accesss this action", 403),
-      );
-    }
-    next();
-  };
 };
 
 export const forgotPassword = async (
@@ -229,6 +173,7 @@ export const googleRedirect = async (
   next: NextFunction,
 ) => {
   try {
+    res.send(req.user);
   } catch (error) {
     next(error);
   }
