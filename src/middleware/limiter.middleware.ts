@@ -12,3 +12,9 @@ export const apiLimiter = rateLimit({
   max: 200,
   message: "Too many requests from this IP, please try again in 1 minutes",
 });
+
+export const resetPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 *1000,
+  max: 5,
+  message:"Too many forgot password request from this IP, pleae try again in 15 minutes"
+})

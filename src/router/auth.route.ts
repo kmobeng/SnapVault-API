@@ -6,15 +6,15 @@ import {
   resetPassword,
   signUp,
 } from "../controller/auth.controller";
-import { loginLimiter } from "../middleware/limiter.middleware";
+import { loginLimiter, resetPasswordLimiter } from "../middleware/limiter.middleware";
 import passport from "passport";
 
 const router = Router();
 
 router.post("/signup", loginLimiter, signUp);
 router.post("/login", loginLimiter, login);
-router.post("/forgot-password", loginLimiter, forgotPassword);
-router.post("/reset-password/:token", loginLimiter, resetPassword);
+router.post("/forgot-password", resetPasswordLimiter, forgotPassword);
+router.post("/reset-password/:token", resetPasswordLimiter, resetPassword);
 
 router.get(
   "/google",

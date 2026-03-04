@@ -54,6 +54,19 @@ export const login = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
+    const cookieOptions: any = {
+      expires: new Date(
+        Date.now() +
+          Number(process.env.JWT_COOKIE_EXPIRES_IN) * 24 * 60 * 60 * 1000,
+      ),
+      // secure: true,
+      httpOnly: true,
+      // sameSite: "strict",
+    };
+
+    if (process.env.NODE_ENV === "production") {
+      ((cookieOptions.secure = true), (cookieOptions.sameSite = "strict"));
+    }
     const { email, password } = req.body;
     if (!email || !password) {
       throw createError("Please enter email and password", 400);
@@ -65,7 +78,9 @@ export const login = async (
     const user: any = fetchedUser.toObject();
     delete user.password;
 
-    res.status(200).json({ status: "success", token, data: { user } });
+    res.cookie("jwt", token);
+
+    res.status(200).json({ status: "success",  data: { user } });
   } catch (error) {
     next(error);
   }
@@ -208,10 +223,13 @@ export const resetPassword = async (
   }
 };
 
-export const googleRedirect= async(req:Request,res:Response,next:NextFunction)=>{
+export const googleRedirect = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
-    
   } catch (error) {
-    next(error)
+    next(error);
   }
-}
+};
