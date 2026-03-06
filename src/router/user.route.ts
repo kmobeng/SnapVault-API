@@ -14,7 +14,7 @@ const router = Router();
 router.use(protect);
 router.use(apiLimiter);
 
-router.get("/me", getMe, getSingleUser);
+router.get("/me",protect, getMe, getSingleUser);
 router.patch("/update-me", updateMe);
 
 router.use(restrictTo("admin"));

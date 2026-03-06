@@ -17,6 +17,7 @@ export const protect = async (
   try {
     let token: any;
     if (req.user) {
+      req.currentUser = req.user as IUser;
       return next();
     }
 
