@@ -12,7 +12,7 @@ export interface IUserMethods {
 }
 
 const UserSchema = new Schema({
-  googleId: {type:String,unique:true,default:null},
+  googleId: { type: String, unique: true, default: null },
   name: { type: String, required: [true, "name is required"] },
   email: {
     type: String,
@@ -65,6 +65,7 @@ const UserSchema = new Schema({
     },
   },
   role: { type: String, default: "user", enum: ["user", "admin"] },
+  createdAt: { type: Date, default: Date.now },
   passwordChangedAt: Date,
   passwordResetToken: { type: String, default: null },
   passwordResetExpires: { type: Date, default: null },
@@ -124,4 +125,3 @@ type UserModel = Model<IUser>;
 const User = model<IUser, UserModel>("User", UserSchema);
 
 export default User;
-
