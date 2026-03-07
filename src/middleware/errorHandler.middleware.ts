@@ -55,6 +55,9 @@ export const errorHandler = (
     errorMessage = "Token expired. Please login again.";
   }
 
+  err.statusCode = statusCode
+  err.message = errorMessage
+
   if (process.env.NODE_ENV === "development") {
     sendErrorDev(err, res);
   } else {

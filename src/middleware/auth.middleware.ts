@@ -2,6 +2,7 @@ import JWT from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
 import { createError } from "../utils/error.util";
 import User, { IUser } from "../model/user.model";
+import logger from "../config/wiston.config";
 
 interface JWTPayload {
   id: string;
@@ -21,12 +22,7 @@ export const protect = async (
       return next();
     }
 
-    if (
-      req.headers.authorization &&
-      req.headers.authorization.startsWith("Bearer")
-    ) {
-      token = req.headers.authorization.split(" ")[1];
-    }
+    token = req.cookies.token;
 
     if (!token) {
       throw createError("You are not logged in. Please login to continue", 401);
