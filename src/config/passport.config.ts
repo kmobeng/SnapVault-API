@@ -2,6 +2,7 @@ import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import User from "../model/user.model";
 import { createError } from "../utils/error.util";
+import { RedisClient } from "./db.config";
 
 passport.serializeUser((user: any, done) => {
   done(null, user.id);
@@ -41,7 +42,7 @@ passport.use(
               ),
             );
           }
-          const username = email.split("@")[0] + "_" + profile.id.slice(0, 6);
+          const username = email.split("@")[0] + "_" + profile.id.slice(-6);
 
           const user = await User.create({
             name: profile.name?.givenName + " " + profile.name?.familyName,
@@ -51,7 +52,8 @@ passport.use(
             password: `google_${profile.id}`, //dummy password for required field
             passwordConfirm: `google_${profile.id}`,
           });
-
+          const usersKey = `users:all`;
+          RedisClient.del(usersKey);
           done(null, user);
         }
       } catch (error) {

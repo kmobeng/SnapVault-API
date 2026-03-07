@@ -65,7 +65,7 @@ export const login = async (
     const user: any = fetchedUser.toObject();
     delete user.password;
 
-    res.cookie("jwt", token);
+    res.cookie("token", token);
 
     res.status(200).json({ status: "success", data: { user } });
   } catch (error) {

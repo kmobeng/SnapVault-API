@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { RedisClient } from "../config/db.config";
-import User, { IUserMethods } from "../model/user.model";
+import User from "../model/user.model";
 import { createError } from "../utils/error.util";
 import APIFeatures from "../utils/APIFeatures.util";
 
@@ -46,8 +46,10 @@ export const getSingleUserService = async (userId: string) => {
 export const updateMeService = async (
   userId: string,
   name: string,
-  username: string
+  username: string,
 ) => {
+  const userKey = `user:${userId}`;
+  const usersKey = `users:all`;
   try {
     const user = await User.findByIdAndUpdate(
       userId,
@@ -55,11 +57,14 @@ export const updateMeService = async (
       {
         new: true,
         runValidators: true,
-      }
+      },
     );
     if (!user) {
       throw createError("Unable to update user", 404);
     }
+
+    RedisClient.del(userKey);
+    RedisClient.del(usersKey);
     return user;
   } catch (error) {
     throw error;
@@ -67,11 +72,16 @@ export const updateMeService = async (
 };
 
 export const deleteUserService = async (userId: string) => {
+  const userKey = `user:${userId}`;
+  const usersKey = `users:all`;
   try {
     const user = await User.findByIdAndDelete(userId);
     if (!user) {
       throw createError("No user found", 404);
     }
+
+    RedisClient.del(userKey);
+    RedisClient.del(usersKey);
     return user;
   } catch (error) {
     throw error;
