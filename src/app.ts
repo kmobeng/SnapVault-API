@@ -51,8 +51,6 @@ export default app;
 // features to add when i am done with oauth
 // handle logout for both jwt and oauth users
 // fix cors. origin and credentials
-// set the protect middleware to skip users with google login
-// implement development and production enviroments. determine what to write in dev and prod mode
 // implement cookies
 // res.cookie('refreshToken', token, {
 //   httpOnly: true,    // you set this
