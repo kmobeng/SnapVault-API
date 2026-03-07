@@ -1,5 +1,4 @@
 import express, { NextFunction, Request, Response } from "express";
-import morgan from "morgan";
 import cors from "cors";
 import helmet from "helmet";
 import { errorHandler } from "./middleware/errorHandler.middleware";
@@ -10,10 +9,11 @@ import authRoute from "./router/auth.route";
 import "./config/passport.config";
 import cookieSession from "cookie-session";
 import passport from "passport";
+import httpLogger from "./config/httpLogger.config";
 
 const app = express();
 
-app.use(morgan("dev"));
+app.use(httpLogger)
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
