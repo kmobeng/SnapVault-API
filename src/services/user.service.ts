@@ -43,17 +43,13 @@ export const getSingleUserService = async (userId: string) => {
   }
 };
 
-export const updateMeService = async (
-  userId: string,
-  name: string,
-  username: string,
-) => {
+export const updateMeService = async (userId: string, name: string) => {
   const userKey = `user:${userId}`;
   const usersKey = `users:all`;
   try {
     const user = await User.findByIdAndUpdate(
       userId,
-      { $set: { name, username } },
+      { $set: { name } },
       {
         new: true,
         runValidators: true,

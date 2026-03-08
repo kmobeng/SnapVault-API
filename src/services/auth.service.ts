@@ -5,17 +5,16 @@ import { createError } from "../utils/error.util";
 export const signUpService = async (
   name: string,
   email: string,
-  username: string,
+
   password: string,
   passwordConfirm: string,
-  role: string
+  role: string,
 ) => {
   try {
     const usersKey = `users:all`;
     const user = await User.create({
       name,
       email,
-      username,
       password,
       passwordConfirm,
       role,
@@ -32,7 +31,7 @@ export const signUpService = async (
 
 export const loginService = async (
   email: string,
-  candidatePassword: string
+  candidatePassword: string,
 ) => {
   try {
     const user = await User.findOne({ email }).select("+password");

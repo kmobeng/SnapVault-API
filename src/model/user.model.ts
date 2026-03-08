@@ -27,27 +27,6 @@ const UserSchema = new Schema({
       message: "Please provide a valid email",
     },
   },
-  username: {
-    type: String,
-    required: [true, "username is required. Please provide!"],
-    unique: true,
-    trim: true,
-    validate: {
-      validator: function (value: string) {
-        for (const char of value) {
-          if (!validator.isAlphanumeric(char) && char !== "_" && char !== ".") {
-            return false;
-          }
-        }
-        if (value[value.length - 1] === ".") {
-          return false;
-        }
-        return true;
-      },
-      message:
-        "invalid username format. username must contain alphabets,numbers,underscore,full-stop and must not end with a full-stop",
-    },
-  },
   password: {
     type: String,
     required: [true, "You must provide password"],

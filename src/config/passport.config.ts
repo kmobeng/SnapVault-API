@@ -42,12 +42,10 @@ passport.use(
               ),
             );
           }
-          const username = email.split("@")[0] + "_" + profile.id.slice(-6);
 
           const user = await User.create({
             name: profile.name?.givenName + " " + profile.name?.familyName,
             email,
-            username,
             googleId: profile.id,
             password: `google_${profile.id}`, //dummy password for required field
             passwordConfirm: `google_${profile.id}`,

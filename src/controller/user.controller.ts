@@ -52,12 +52,8 @@ export const updateMe = async (
   next: NextFunction,
 ) => {
   try {
-    const { name, username } = req.body;
-    const user = await updateMeService(
-      req.currentUser._id.toString(),
-      name,
-      username,
-    );
+    const { name } = req.body;
+    const user = await updateMeService(req.currentUser._id.toString(), name);
     res.status(200).json({ status: "success", data: user });
   } catch (error) {
     next(error);

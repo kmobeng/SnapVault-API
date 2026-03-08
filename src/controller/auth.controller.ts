@@ -5,20 +5,17 @@ import User, { IUser } from "../model/user.model";
 import sendEmail from "../utils/email.util";
 import crypto from "crypto";
 
-
-
 export const signUp = async (
   req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const { name, email, username, password, passwordConfirm, role } = req.body;
+    const { name, email, password, passwordConfirm, role } = req.body;
 
     const fetchedUser = await signUpService(
       name,
       email,
-      username,
       password,
       passwordConfirm,
       role,
