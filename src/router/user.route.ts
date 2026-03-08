@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  changePassword,
   deleteUser,
   getAllUsers,
   getMe,
@@ -16,6 +17,7 @@ router.use(apiLimiter);
 
 router.get("/me",protect, getMe, getSingleUser);
 router.patch("/update-me", updateMe);
+router.patch("/change-password",changePassword)
 
 router.use(restrictTo("admin"));
 router.route("/").get(getAllUsers);

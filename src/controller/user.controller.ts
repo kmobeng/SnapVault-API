@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import {
+  changePasswordService,
   deleteUserService,
   getAllUsersService,
   getSingleUserService,
@@ -76,3 +77,19 @@ export const deleteUser = async (
     next(error);
   }
 };
+
+export const changePassword = async (req:Request, res:Response, next :NextFunction):Promise<void>=>{
+  try {
+    const {currentPassword, newPassword, newPasswordConfirm} = req.body
+
+    if (!currentPassword || !newPassword || !newPasswordConfirm) {
+      throw createError("Please provide current password, new password and confirm password to continue",400)
+    }
+
+    const result = changePasswordService(req.currentUser,req.currentUser._id.toString(),currentPassword,newPassword, newPasswordConfirm)
+
+    res.status(200).json({status: "success", message:"Password changed successfully"})
+  } catch (error) {
+    next(error)
+  }
+}

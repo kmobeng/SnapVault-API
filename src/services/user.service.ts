@@ -83,3 +83,14 @@ export const deleteUserService = async (userId: string) => {
     throw error;
   }
 };
+
+export const changePasswordService = async (user:any,id:string,currentPassword:string, newPassword:string, newPasswordConfirm:string)=>{
+  try {
+    
+    await user.comparePassword(currentPassword);
+    const updatedUser = await User.findByIdAndUpdate(id,{password:newPassword,passwordConfirm:newPasswordConfirm}, {new: true, runValidators: true});
+    return updatedUser;
+  } catch (error) {
+    throw error
+  }
+}
