@@ -44,6 +44,7 @@ const UserSchema = new Schema({
     },
   },
   role: { type: String, default: "user", enum: ["user", "admin"] },
+  provider: { type: String, default: "local", enum: ["local", "google"] },
   createdAt: { type: Date, default: Date.now },
   passwordChangedAt: Date,
   passwordResetToken: { type: String, default: null },

@@ -47,6 +47,7 @@ passport.use(
             name: profile.name?.givenName + " " + profile.name?.familyName,
             email,
             googleId: profile.id,
+            provider: "google",
             password: `google_${profile.id}`, //dummy password for required field
             passwordConfirm: `google_${profile.id}`,
           });
