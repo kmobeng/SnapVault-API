@@ -47,8 +47,8 @@ const UserSchema = new Schema({
   provider: { type: String, default: "local", enum: ["local", "google"] },
   createdAt: { type: Date, default: Date.now },
   passwordChangedAt: Date,
-  passwordResetToken: { type: String, default: null },
-  passwordResetExpires: { type: Date, default: null },
+  passwordResetToken: { type: String, default: null, select: false },
+  passwordResetExpires: { type: Date, default: null, select: false },
 });
 
 UserSchema.pre("save", async function (this: any) {
