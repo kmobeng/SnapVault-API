@@ -84,13 +84,29 @@ export const deleteUserService = async (userId: string) => {
   }
 };
 
-export const changePasswordService = async (user:any,id:string,currentPassword:string, newPassword:string, newPasswordConfirm:string)=>{
+export const changePasswordService = async (
+  id: string,
+  currentPassword: string,
+  newPassword: string,
+  newPasswordConfirm: string,
+) => {
   try {
-    
-    await user.comparePassword(currentPassword);
-    const updatedUser = await User.findByIdAndUpdate(id,{password:newPassword,passwordConfirm:newPasswordConfirm}, {new: true, runValidators: true});
-    return updatedUser;
+    const user = await User.findById(id).select("+password");
+
+    if (!user) {
+      throw createError("no user found", 400);
+    }
+
+    if (!(await user.comparePassword(currentPassword))) {
+      throw createError("Incorrect password", 400);
+    }
+
+    user.password = newPassword;
+    user.passwordConfirm = newPasswordConfirm;
+    await user.save();
+
+    return user;
   } catch (error) {
-    throw error
+    throw error;
   }
-}
+};

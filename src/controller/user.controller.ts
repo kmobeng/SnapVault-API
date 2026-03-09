@@ -86,7 +86,7 @@ export const changePassword = async (req:Request, res:Response, next :NextFuncti
       throw createError("Please provide current password, new password and confirm password to continue",400)
     }
 
-    const result = changePasswordService(req.currentUser,req.currentUser._id.toString(),currentPassword,newPassword, newPasswordConfirm)
+    const result = await changePasswordService(req.currentUser._id.toString(),currentPassword,newPassword, newPasswordConfirm)
 
     res.status(200).json({status: "success", message:"Password changed successfully"})
   } catch (error) {

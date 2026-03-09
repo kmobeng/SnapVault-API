@@ -15,7 +15,7 @@ const router = Router();
 router.use(protect);
 router.use(apiLimiter);
 
-router.get("/me",protect, getMe, getSingleUser);
+router.get("/me", getMe, getSingleUser);
 router.patch("/update-me", updateMe);
 router.patch("/change-password",changePassword)
 
