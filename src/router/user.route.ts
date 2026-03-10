@@ -17,7 +17,7 @@ router.use(apiLimiter);
 
 router.get("/me", getMe, getSingleUser);
 router.patch("/update-me", updateMe);
-router.patch("/change-password",changePassword)
+router.patch("/change-password", changePassword);
 
 router.use(restrictTo("admin"));
 router.route("/").get(getAllUsers);

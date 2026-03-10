@@ -5,6 +5,25 @@ import User, { IUser } from "../model/user.model";
 import sendEmail from "../utils/email.util";
 import crypto from "crypto";
 
+const Token = (res: Response, user: IUser) => {
+  const cookieOptions: any = {
+    expires: new Date(
+      Date.now() +
+        Number(process.env.JWT_COOKIE_EXPIRES_IN) * 24 * 60 * 60 * 1000,
+    ),
+    // secure: true,
+    httpOnly: true,
+    // sameSite: "strict",
+  };
+
+  if (process.env.NODE_ENV === "production") {
+    ((cookieOptions.secure = true), (cookieOptions.sameSite = "strict"));
+  }
+
+  const token = user.signToken();
+  res.cookie("token", token, cookieOptions);
+};
+
 export const signUp = async (
   req: Request,
   res: Response,
@@ -21,12 +40,12 @@ export const signUp = async (
       role,
     );
 
-    const token = fetchedUser.signToken();
-
     const user: any = fetchedUser.toObject();
     delete user.password;
 
-    res.status(201).json({ status: "success", token, data: { user } });
+    Token(res, user);
+
+    res.status(201).json({ status: "success", data: { user } });
   } catch (error) {
     next(error);
   }
@@ -38,31 +57,17 @@ export const login = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const cookieOptions: any = {
-      expires: new Date(
-        Date.now() +
-          Number(process.env.JWT_COOKIE_EXPIRES_IN) * 24 * 60 * 60 * 1000,
-      ),
-      // secure: true,
-      httpOnly: true,
-      // sameSite: "strict",
-    };
-
-    if (process.env.NODE_ENV === "production") {
-      ((cookieOptions.secure = true), (cookieOptions.sameSite = "strict"));
-    }
     const { email, password } = req.body;
     if (!email || !password) {
       throw createError("Please enter email and password", 400);
     }
 
     const fetchedUser = await loginService(email, password);
-    const token = fetchedUser.signToken();
 
     const user: any = fetchedUser.toObject();
     delete user.password;
 
-    res.cookie("token", token);
+    Token(res, user);
 
     res.status(200).json({ status: "success", data: { user } });
   } catch (error) {
@@ -164,8 +169,14 @@ export const googleRedirect = async (
   next: NextFunction,
 ) => {
   try {
-    // redirect to profile
-    res.redirect("/api/user/me");
+    const user = req.user as IUser;
+    res
+      .status(200)
+      .json({
+        status: "success",
+        message: "Logged in with Google. Please change your password.",
+        data: { user },
+      });
   } catch (error) {
     next(error);
   }
