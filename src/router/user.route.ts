@@ -8,16 +8,22 @@ import {
   updateMe,
 } from "../controller/user.controller";
 import { apiLimiter } from "../middleware/limiter.middleware";
-import { protect, restrictTo } from "../middleware/auth.middleware";
+import {
+  needToChangePassword,
+  protect,
+  restrictTo,
+} from "../middleware/auth.middleware";
 
 const router = Router();
 
 router.use(protect);
 router.use(apiLimiter);
 
+router.patch("/change-password", changePassword);
+
+router.use(needToChangePassword);
 router.get("/me", getMe, getSingleUser);
 router.patch("/update-me", updateMe);
-router.patch("/change-password", changePassword);
 
 router.use(restrictTo("admin"));
 router.route("/").get(getAllUsers);

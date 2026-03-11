@@ -57,3 +57,14 @@ export const restrictTo = (...roles: string[]) => {
     next();
   };
 };
+
+export const needToChangePassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  if (req.currentUser.needToChangePassword) {
+    throw createError("You need to change your password to continue", 403);
+  }
+  next();
+};

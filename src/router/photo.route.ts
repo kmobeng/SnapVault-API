@@ -9,12 +9,17 @@ import {
 import multer from "multer";
 import { apiLimiter } from "../middleware/limiter.middleware";
 import { setRole } from "../middleware/setRoleAdmin.middleware";
-import { protect, restrictTo } from "../middleware/auth.middleware";
+import {
+  needToChangePassword,
+  protect,
+  restrictTo,
+} from "../middleware/auth.middleware";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
 const router = Router();
 router.use(protect);
+router.use(needToChangePassword);
 router.use(apiLimiter);
 
 router

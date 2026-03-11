@@ -7,10 +7,11 @@ import {
   updateSingleAlbum,
 } from "../controller/album.controller";
 import { apiLimiter } from "../middleware/limiter.middleware";
-import { protect } from "../middleware/auth.middleware";
+import { needToChangePassword, protect } from "../middleware/auth.middleware";
 
 const router = Router();
 router.use(protect);
+router.use(needToChangePassword)
 router.use(apiLimiter);
 
 router.route("/album").post(createAlbum).get(getAllAlbums);
