@@ -15,16 +15,16 @@ A secure RESTful API for storing and managing photos and albums. Built with Node
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Runtime | Node.js + TypeScript |
-| Framework | Express 5 |
-| Database | MongoDB (Mongoose) |
-| Cache | Redis (ioredis) |
-| Storage | Cloudinary |
-| Auth | JWT, Passport.js (Google OAuth 2.0) |
-| Email | Nodemailer |
-| Logging | Winston, Morgan |
+| Layer     | Technology                          |
+| --------- | ----------------------------------- |
+| Runtime   | Node.js + TypeScript                |
+| Framework | Express 5                           |
+| Database  | MongoDB (Mongoose)                  |
+| Cache     | Redis (ioredis)                     |
+| Storage   | Cloudinary                          |
+| Auth      | JWT, Passport.js (Google OAuth 2.0) |
+| Email     | Nodemailer                          |
+| Logging   | Winston, Morgan                     |
 
 ---
 
@@ -76,8 +76,17 @@ CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 
+# Email
+EMAIL_FROM=username@yourdomain.com
 
+# SendGrid (production only)
+SENDGRID_USERNAME=apikey
+SENDGRID_PASSWORD=your_sendgrid_api_key
 ```
+
+> **Development email:** The app sends emails via a local SMTP server on `localhost:1025`. Use [Mailpit](https://mailpit.axllent.org) to catch and inspect emails locally.
+>
+> **Production email:** Handled automatically via SendGrid using the credentials above.
 
 ### Running the Server
 
@@ -98,16 +107,17 @@ npm run build
 
 ### Auth — `/api/auth`
 
-| Method | Endpoint | Description | Auth |
-|---|---|---|---|
-| POST | `/signup` | Register a new user | Public |
-| POST | `/login` | Log in with email & password | Public |
-| POST | `/forgot-password` | Send password reset email | Public |
-| POST | `/reset-password/:token` | Reset password using token | Public |
-| GET | `/google` | Initiate Google OAuth flow | Public |
-| GET | `/google/redirect` | Google OAuth callback | Public |
+| Method | Endpoint                 | Description                  | Auth   |
+| ------ | ------------------------ | ---------------------------- | ------ |
+| POST   | `/signup`                | Register a new user          | Public |
+| POST   | `/login`                 | Log in with email & password | Public |
+| POST   | `/forgot-password`       | Send password reset email    | Public |
+| POST   | `/reset-password/:token` | Reset password using token   | Public |
+| GET    | `/google`                | Initiate Google OAuth flow   | Public |
+| GET    | `/google/redirect`       | Google OAuth callback        | Public |
 
 #### Sign Up
+
 ```json
 POST /api/auth/signup
 {
@@ -119,6 +129,7 @@ POST /api/auth/signup
 ```
 
 #### Login
+
 ```json
 POST /api/auth/login
 {
@@ -133,14 +144,14 @@ POST /api/auth/login
 
 All user routes require authentication.
 
-| Method | Endpoint | Description | Role |
-|---|---|---|---|
-| PATCH | `/change-password` | Change current password | User |
-| GET | `/me` | Get your own profile | User |
-| PATCH | `/update-me` | Update your name | User |
-| GET | `/` | Get all users | Admin |
-| GET | `/:userId` | Get a single user | Admin |
-| DELETE | `/:userId` | Delete a user | Admin |
+| Method | Endpoint           | Description             | Role  |
+| ------ | ------------------ | ----------------------- | ----- |
+| PATCH  | `/change-password` | Change current password | User  |
+| GET    | `/me`              | Get your own profile    | User  |
+| PATCH  | `/update-me`       | Update your name        | User  |
+| GET    | `/`                | Get all users           | Admin |
+| GET    | `/:userId`         | Get a single user       | Admin |
+| DELETE | `/:userId`         | Delete a user           | Admin |
 
 > **Note:** Google OAuth users must call `PATCH /change-password` before accessing any other user routes.
 
@@ -150,17 +161,18 @@ All user routes require authentication.
 
 All photo routes require authentication.
 
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/photo` | Upload a photo |
-| GET | `/photo` | Get your photos |
-| GET | `/photo/:photoId` | Get a single photo |
-| PATCH | `/photo/:photoId` | Update photo title/visibility |
-| DELETE | `/photo/:photoId` | Delete a photo |
-| GET | `/:userId/photo` | Get another user's public photos |
-| GET | `/:userId/photo/:photoId` | Get a specific public photo |
+| Method | Endpoint                  | Description                      |
+| ------ | ------------------------- | -------------------------------- |
+| POST   | `/photo`                  | Upload a photo                   |
+| GET    | `/photo`                  | Get your photos                  |
+| GET    | `/photo/:photoId`         | Get a single photo               |
+| PATCH  | `/photo/:photoId`         | Update photo title/visibility    |
+| DELETE | `/photo/:photoId`         | Delete a photo                   |
+| GET    | `/:userId/photo`          | Get another user's public photos |
+| GET    | `/:userId/photo/:photoId` | Get a specific public photo      |
 
 #### Upload Photo
+
 ```
 POST /api/photo
 Content-Type: multipart/form-data
@@ -178,15 +190,15 @@ albumId:      <optional album ID>
 
 All album routes require authentication.
 
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/album` | Create an album |
-| GET | `/album` | Get your albums |
-| GET | `/album/:albumId` | Get a single album |
-| PATCH | `/album/:albumId` | Update album name |
-| DELETE | `/album/:albumId` | Delete an album |
-| GET | `/:userId/album` | Get another user's albums |
-| GET | `/:userId/album/:albumId` | Get a specific album |
+| Method | Endpoint                  | Description               |
+| ------ | ------------------------- | ------------------------- |
+| POST   | `/album`                  | Create an album           |
+| GET    | `/album`                  | Get your albums           |
+| GET    | `/album/:albumId`         | Get a single album        |
+| PATCH  | `/album/:albumId`         | Update album name         |
+| DELETE | `/album/:albumId`         | Delete an album           |
+| GET    | `/:userId/album`          | Get another user's albums |
+| GET    | `/:userId/album/:albumId` | Get a specific album      |
 
 ---
 
