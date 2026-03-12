@@ -57,7 +57,7 @@ if (!isDev) {
 }
 
 const logger = winston.createLogger({
-  level: isDev ? "debug" : "warn", 
+  level: isDev ? "debug" : "info",
   levels,
   transports,
 });

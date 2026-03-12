@@ -1,0 +1,68 @@
+{"level":"info","message":"Connected to redis","timestamp":"2026-03-12 17:57:33:5733"}
+{"level":"info","message":"connected to database successfully","timestamp":"2026-03-12 17:57:36:5736"}
+{"level":"info","message":"Server is listening on port 4000","timestamp":"2026-03-12 17:57:36:5736"}
+{"level":"info","message":"Connected to redis","timestamp":"2026-03-12 17:58:32:5832"}
+{"level":"info","message":"connected to database successfully","timestamp":"2026-03-12 17:58:33:5833"}
+{"level":"info","message":"Server is listening on port 4000","timestamp":"2026-03-12 17:58:33:5833"}
+{"level":"info","message":"Connected to redis","timestamp":"2026-03-12 18:00:04:04"}
+{"level":"info","message":"connected to database successfully","timestamp":"2026-03-12 18:00:06:06"}
+{"level":"info","message":"Server is listening on port 4000","timestamp":"2026-03-12 18:00:06:06"}
+{"level":"info","message":"Connected to redis","timestamp":"2026-03-12 18:02:19:219"}
+{"level":"info","message":"Connected to redis","timestamp":"2026-03-12 18:02:25:225"}
+{"level":"info","message":"connected to database successfully","timestamp":"2026-03-12 18:02:27:227"}
+{"level":"info","message":"Server is listening on port 4000","timestamp":"2026-03-12 18:02:27:227"}
+{"level":"info","message":"Connected to redis","timestamp":"2026-03-12 18:02:31:231"}
+{"level":"info","message":"connected to database successfully","timestamp":"2026-03-12 18:02:32:232"}
+{"level":"info","message":"Server is listening on port 4000","timestamp":"2026-03-12 18:02:32:232"}
+{"level":"info","message":"Connected to redis","timestamp":"2026-03-12 18:02:52:252"}
+{"level":"info","message":"connected to database successfully","timestamp":"2026-03-12 18:02:56:256"}
+{"level":"info","message":"Server is listening on port 4000","timestamp":"2026-03-12 18:02:56:256"}
+{"level":"info","message":"Connected to redis","timestamp":"2026-03-12 18:21:31:2131"}
+{"level":"info","message":"connected to database successfully","timestamp":"2026-03-12 18:21:33:2133"}
+{"level":"info","message":"Server is listening on port 4000","timestamp":"2026-03-12 18:21:33:2133"}
+{"level":"info","message":"Connected to redis","timestamp":"2026-03-12 18:21:39:2139"}
+{"level":"info","message":"connected to database successfully","timestamp":"2026-03-12 18:21:40:2140"}
+{"level":"info","message":"Server is listening on port 4000","timestamp":"2026-03-12 18:21:40:2140"}
+{"level":"info","message":"Connected to redis","timestamp":"2026-03-12 18:50:07:507"}
+{"level":"info","message":"connected to database successfully","timestamp":"2026-03-12 18:50:09:509"}
+{"level":"info","message":"Server is listening on port 4000","timestamp":"2026-03-12 18:50:09:509"}
+{"level":"info","message":"Connected to redis","timestamp":"2026-03-12 18:50:18:5018"}
+{"level":"info","message":"connected to database successfully","timestamp":"2026-03-12 18:50:20:5020"}
+{"level":"info","message":"Server is listening on port 4000","timestamp":"2026-03-12 18:50:20:5020"}
+{"level":"info","message":"Connected to redis","timestamp":"2026-03-12 18:51:42:5142"}
+{"level":"info","message":"Connected to redis","timestamp":"2026-03-12 18:52:13:5213"}
+{"level":"info","message":"connected to database successfully","timestamp":"2026-03-12 18:52:15:5215"}
+{"level":"info","message":"Server is listening on port 4000","timestamp":"2026-03-12 18:52:15:5215"}
+{"level":"info","message":"Connected to redis","timestamp":"2026-03-12 18:52:26:5226"}
+{"level":"info","message":"connected to database successfully","timestamp":"2026-03-12 18:52:27:5227"}
+{"level":"info","message":"Server is listening on port 4000","timestamp":"2026-03-12 18:52:27:5227"}
+{"level":"info","message":"Connected to redis","timestamp":"2026-03-12 18:52:32:5232"}
+{"level":"info","message":"connected to database successfully","timestamp":"2026-03-12 18:52:33:5233"}
+{"level":"info","message":"Server is listening on port 4000","timestamp":"2026-03-12 18:52:33:5233"}
+{"level":"info","message":"Connected to redis","timestamp":"2026-03-12 18:58:56:5856"}
+{"level":"info","message":"connected to database successfully","timestamp":"2026-03-12 18:59:00:590"}
+{"level":"info","message":"Server is listening on port 4000","timestamp":"2026-03-12 18:59:00:590"}
+{"level":"info","message":"Connected to redis","timestamp":"2026-03-12 18:59:24:5924"}
+{"level":"info","message":"connected to database successfully","timestamp":"2026-03-12 18:59:27:5927"}
+{"level":"info","message":"Server is listening on port 4000","timestamp":"2026-03-12 18:59:27:5927"}
+{"level":"info","message":"Connected to redis","timestamp":"2026-03-12 18:59:33:5933"}
+{"level":"info","message":"connected to database successfully","timestamp":"2026-03-12 18:59:37:5937"}
+{"level":"info","message":"Server is listening on port 4000","timestamp":"2026-03-12 18:59:37:5937"}
+{"level":"info","message":"Connected to redis","timestamp":"2026-03-12 19:16:38:1638"}
+{"level":"info","message":"connected to database successfully","timestamp":"2026-03-12 19:16:40:1640"}
+{"level":"info","message":"Server is listening on port 4000","timestamp":"2026-03-12 19:16:40:1640"}
+{"level":"info","message":"Connected to redis","timestamp":"2026-03-12 19:17:22:1722"}
+{"level":"info","message":"connected to database successfully","timestamp":"2026-03-12 19:17:23:1723"}
+{"level":"info","message":"Server is listening on port 4000","timestamp":"2026-03-12 19:17:23:1723"}
+{"level":"info","message":"Connected to redis","timestamp":"2026-03-12 19:17:42:1742"}
+{"level":"info","message":"connected to database successfully","timestamp":"2026-03-12 19:17:44:1744"}
+{"level":"info","message":"Server is listening on port 4000","timestamp":"2026-03-12 19:17:44:1744"}
+{"level":"info","message":"Connected to redis","timestamp":"2026-03-12 19:18:01:181"}
+{"level":"info","message":"connected to database successfully","timestamp":"2026-03-12 19:18:02:182"}
+{"level":"info","message":"Server is listening on port 4000","timestamp":"2026-03-12 19:18:02:182"}
+{"level":"info","message":"Connected to redis","timestamp":"2026-03-12 19:18:07:187"}
+{"level":"info","message":"connected to database successfully","timestamp":"2026-03-12 19:18:08:188"}
+{"level":"info","message":"Server is listening on port 4000","timestamp":"2026-03-12 19:18:08:188"}
+{"level":"info","message":"Connected to redis","timestamp":"2026-03-12 19:19:37:1937"}
+{"level":"info","message":"connected to database successfully","timestamp":"2026-03-12 19:19:44:1944"}
+{"level":"info","message":"Server is listening on port 4000","timestamp":"2026-03-12 19:19:44:1944"}
