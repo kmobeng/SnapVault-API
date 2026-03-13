@@ -95,7 +95,7 @@ SENDGRID_PASSWORD=your_sendgrid_api_key
 npm run dev
 
 # Production
-npm run prod
+npm run start
 
 # Build
 npm run build
