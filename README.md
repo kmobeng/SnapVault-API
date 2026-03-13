@@ -48,20 +48,27 @@ npm install
 
 ### Environment Variables
 
-Create a `.env` file in the root directory:
+Copy `.env.example` to `.env` in the project root, then replace placeholder values with your real credentials:
+
+```bash
+cp .env.example .env
+```
+
+Required variables in `.env`:
 
 ```env
-PORT=3000
+PORT=4000
 NODE_ENV=development
 
-# MongoDB
-MONGO_URI=mongodb://localhost:27017/photo-vault
+# Database
+DB_URL=mongodb://localhost:27017/photo-vault
 
 # Redis
 REDIS_URL=redis://localhost:6379
 
 # JWT
 JWT_SECRET=your_jwt_secret
+JWT_EXPIRES_IN=7d
 JWT_COOKIE_EXPIRES_IN=7
 
 # Cookie Session (OAuth only)
@@ -72,7 +79,6 @@ GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 
 # Cloudinary
-CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 
@@ -83,6 +89,8 @@ EMAIL_FROM=username@yourdomain.com
 SENDGRID_USERNAME=apikey
 SENDGRID_PASSWORD=your_sendgrid_api_key
 ```
+
+`CLOUDINARY_CLOUD_NAME` is currently hardcoded in the project config, so it is not required in `.env` unless you later move it to environment config.
 
 > **Development email:** The app sends emails via a local SMTP server on `localhost:1025`. Use [Mailpit](https://mailpit.axllent.org) to catch and inspect emails locally.
 >
