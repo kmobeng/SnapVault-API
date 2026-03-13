@@ -16,6 +16,3 @@ const startServer = async () => {
 };
 
 startServer();
-
-// fix sendgrid erros
-// make the readme better 
