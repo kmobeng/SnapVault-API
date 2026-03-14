@@ -42,13 +42,13 @@ export const signUp = async (
 
     Token(res, fetchedUser);
 
-    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const verificationToken = crypto.randomInt(10000, 100000).toString();
     fetchedUser.emailVerificationToken = crypto
       .createHash("sha256")
       .update(verificationToken)
       .digest("hex");
     fetchedUser.emailverificationTokenExpires = new Date(
-      Date.now() + 10 * 60 * 1000,
+      Date.now() + 30 * 60 * 1000,
     );
 
     await fetchedUser.save({ validateBeforeSave: false });
@@ -59,15 +59,14 @@ export const signUp = async (
     delete user.emailverificationTokenExpires;
 
     const message = `Welcome to Photo Vault, ${user.name}!
-    Please verify your email to access all features of our application here: ${req.protocol}://${req.get(
-      "host",
-    )}/api/auth/verify-email/${verificationToken}
-    If you didn't create an account, please ignore this email.`;
+    Please verify your email to access all features of our application with this token: ${verificationToken}
+
+     This token is valid for 30 minutes. If you didn't create an account, please ignore this email.`;
 
     try {
       await sendEmail({
         email: fetchedUser.email,
-        subject: "Your account verification token (valid for 10 minutes)",
+        subject: "Your account verification token (valid for 30 minutes)",
         message,
       });
     } catch (error) {
@@ -215,6 +214,98 @@ export const googleRedirect = async (
       message: "Logged in with Google. Please set password to continue.",
       data: { user },
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const requestEmailVerify = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    // get email from req.user
+    const email = req.user?.email;
+    if (req.user?.isEmailVerified === true) {
+      throw createError("Email already verified", 400);
+    }
+    // generate email with crypto package and hash it
+    const emailToken = crypto.randomInt(10000, 100000).toString();
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(emailToken)
+      .digest("hex");
+
+    // save token and expiration time
+
+    const saveToken = await User.findByIdAndUpdate(
+      req.user?._id,
+      {
+        $set: {
+          verifyEmailToken: hashedToken,
+          emailTokenExpires: new Date(Date.now() + 45 * 60 * 1000),
+        },
+      },
+      { new: true },
+    );
+    // create message and send email
+
+    const message = `Hi ${saveToken!.name.split(" ")[0]}
+      Enter this code to verify your email
+      ${emailToken}`;
+    try {
+      await sendEmail({
+        email,
+        subject: "VERIFY YOUR EMAIL. (THIS CODE IS VALID FOR 5 MINS)",
+        message,
+      });
+    } catch (error) {
+      saveToken!.emailVerificationToken = null;
+      saveToken!.emailverificationTokenExpires = null;
+      await saveToken!.save({ validateBeforeSave: false });
+
+      throw createError("Error while sending email", 500);
+    }
+    // send response to user
+    res
+      .status(200)
+      .json({ status: "success", message: "OTP has been sent to your email" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const verifyEmail = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { emailToken } = req.body;
+    if (!emailToken) {
+      throw createError("Please provide token", 400);
+    }
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(emailToken.toString())
+      .digest("hex");
+
+    const user = await User.findOne({
+      emailVerificationToken: hashedToken,
+      emailverificationTokenExpires: { $gt: new Date(Date.now()) },
+    });
+
+    if (!user) {
+      throw createError("Invalid or expired token", 404);
+    }
+
+    user.isEmailVerified = true;
+    user.emailVerificationToken = null;
+    user.emailverificationTokenExpires = null;
+    await user.save({ validateBeforeSave: false });
+
+    res.status(200).json({ status: "success", message: "Email verified!" });
   } catch (error) {
     next(error);
   }
