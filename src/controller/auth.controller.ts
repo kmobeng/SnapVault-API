@@ -22,6 +22,7 @@ const Token = (res: Response, user: IUser) => {
 
   const token = user.signToken();
   res.cookie("token", token, cookieOptions);
+  return token;
 };
 
 export const signUp = async (
@@ -40,7 +41,7 @@ export const signUp = async (
       role,
     );
 
-    Token(res, fetchedUser);
+    const token = Token(res, fetchedUser);
 
     const verificationToken = crypto.randomInt(10000, 100000).toString();
     fetchedUser.emailVerificationToken = crypto
@@ -80,6 +81,7 @@ export const signUp = async (
 
     res.status(201).json({
       status: "success",
+      token,
       message: "Email verification token sent to email",
       data: { user },
     });
@@ -101,12 +103,12 @@ export const login = async (
 
     const fetchedUser = await loginService(email, password);
 
-    Token(res, fetchedUser);
+    const token = Token(res, fetchedUser);
 
     const user: any = fetchedUser.toObject();
     delete user.password;
 
-    res.status(200).json({ status: "success", data: { user } });
+    res.status(200).json({ status: "success",token, data: { user } });
   } catch (error) {
     next(error);
   }

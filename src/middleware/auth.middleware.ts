@@ -22,7 +22,7 @@ export const protect = async (
       return next();
     }
 
-    token = req.cookies.token;
+    token = req.cookies.token || req.headers.authorization?.split(" ")[1];
 
     if (!token) {
       throw createError("You are not logged in. Please login to continue", 401);
