@@ -8,8 +8,7 @@ import crypto from "crypto";
 const Token = (res: Response, user: IUser) => {
   const cookieOptions: any = {
     expires: new Date(
-      Date.now() +
-        Number(process.env.JWT_COOKIE_EXPIRES_IN) * 24 * 60 * 60 * 1000,
+      Date.now() + Number(process.env.JWT_COOKIE_EXPIRES_IN) * 60 * 1000,
     ),
     // secure: true,
     httpOnly: true,
@@ -20,7 +19,7 @@ const Token = (res: Response, user: IUser) => {
     ((cookieOptions.secure = true), (cookieOptions.sameSite = "strict"));
   }
 
-  const token = user.signToken();
+  const token = user.signAccessToken();
   res.cookie("token", token, cookieOptions);
   return token;
 };
@@ -40,6 +39,8 @@ export const signUp = async (
       passwordConfirm,
       role,
     );
+
+    fetchedUser.refreshToken = fetchedUser.signRefreshToken();
 
     const token = Token(res, fetchedUser);
 
@@ -108,7 +109,7 @@ export const login = async (
     const user: any = fetchedUser.toObject();
     delete user.password;
 
-    res.status(200).json({ status: "success",token, data: { user } });
+    res.status(200).json({ status: "success", token, data: { user } });
   } catch (error) {
     next(error);
   }

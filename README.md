@@ -17,16 +17,16 @@ A secure RESTful API for storing and managing photos and albums. Built with Node
 
 ## Tech Stack
 
-| Layer | Technology |
-| --- | --- |
-| Runtime | Node.js + TypeScript |
-| Framework | Express 5 |
-| Database | MongoDB (Mongoose) |
-| Cache | Redis (ioredis) |
-| Storage | Cloudinary |
-| Auth | JWT, Passport.js (Google OAuth 2.0) |
-| Email | Nodemailer |
-| Logging | Winston, Morgan |
+| Layer     | Technology                          |
+| --------- | ----------------------------------- |
+| Runtime   | Node.js + TypeScript                |
+| Framework | Express 5                           |
+| Database  | MongoDB (Mongoose)                  |
+| Cache     | Redis (ioredis)                     |
+| Storage   | Cloudinary                          |
+| Auth      | JWT, Passport.js (Google OAuth 2.0) |
+| Email     | Nodemailer                          |
+| Logging   | Winston, Morgan                     |
 
 ## Getting Started
 
@@ -69,7 +69,7 @@ REDIS_URL=redis://localhost:6379
 
 # JWT
 JWT_SECRET=your_jwt_secret
-JWT_EXPIRES_IN=7d
+ACCESS_JWT_EXPIRES_IN=7d
 JWT_COOKIE_EXPIRES_IN=7
 
 # Cookie Session (OAuth)
@@ -125,16 +125,16 @@ Base URL: /api
 
 ### Auth Routes (/api/auth)
 
-| Method | Endpoint | Description | Guard |
-| --- | --- | --- | --- |
-| POST | /signup | Register a user and send email verification code | Public + loginLimiter |
-| POST | /login | Login with email and password | Public + loginLimiter |
-| POST | /forgot-password | Send password reset token | Public + resetPasswordLimiter |
-| POST | /reset-password/:token | Reset password by token | Public + resetPasswordLimiter |
-| GET | /google | Start Google OAuth | Public |
-| GET | /google/redirect | Google OAuth callback | Public |
-| POST | /verify-email | Verify email with token in body | Auth required |
-| POST | /verify-email/request | Request a new email verification token | Auth required |
+| Method | Endpoint               | Description                                      | Guard                         |
+| ------ | ---------------------- | ------------------------------------------------ | ----------------------------- |
+| POST   | /signup                | Register a user and send email verification code | Public + loginLimiter         |
+| POST   | /login                 | Login with email and password                    | Public + loginLimiter         |
+| POST   | /forgot-password       | Send password reset token                        | Public + resetPasswordLimiter |
+| POST   | /reset-password/:token | Reset password by token                          | Public + resetPasswordLimiter |
+| GET    | /google                | Start Google OAuth                               | Public                        |
+| GET    | /google/redirect       | Google OAuth callback                            | Public                        |
+| POST   | /verify-email          | Verify email with token in body                  | Auth required                 |
+| POST   | /verify-email/request  | Request a new email verification token           | Auth required                 |
 
 Verify email request body:
 

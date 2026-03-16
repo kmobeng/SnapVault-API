@@ -3,10 +3,10 @@ import validator from "validator";
 import bcrypt from "bcrypt";
 import JWT from "jsonwebtoken";
 import crypto from "crypto";
-import isEmail from "validator/lib/isEmail";
 
 export interface IUserMethods {
-  signToken(): string;
+  signRefreshToken(): string;
+  signAccessToken(): string;
   comparePassword(candidatePassword: string): Promise<boolean>;
   changedPasswordAfter(JWTTimestamp: number): boolean;
   createPasswordToken(): string;
@@ -39,11 +39,12 @@ const UserSchema = new Schema({
       message: "Password must match",
     },
   },
+  refreshToken: { type: String, default: null, select: false },
   role: { type: String, default: "user", enum: ["user", "admin"] },
   provider: { type: String, default: "local", enum: ["local", "google"] },
   needToChangePassword: { type: Boolean, default: false },
   isEmailVerified: { type: Boolean, default: false },
-  emailVerificationToken: { type: String, default: null,select: false },
+  emailVerificationToken: { type: String, default: null, select: false },
   emailverificationTokenExpires: { type: Date, default: null, select: false },
   createdAt: { type: Date, default: Date.now },
   passwordChangedAt: Date,
@@ -63,11 +64,17 @@ UserSchema.pre("save", async function () {
   this.passwordChangedAt = new Date(Date.now() - 1000);
 });
 
-UserSchema.methods.signToken = function () {
+UserSchema.methods.signAccessToken = function () {
   return JWT.sign({ id: this._id }, process.env.JWT_SECRET!, {
-    expiresIn: process.env.JWT_EXPIRES_IN!,
+    expiresIn: process.env.ACCESS_JWT_EXPIRES_IN!,
   } as JWT.SignOptions);
 };
+
+UserSchema.methods.signRefreshToken = function () {
+  return JWT.sign({ id: this._id }, process.env.JWT_SECRET!, {
+    expiresIn: process.env.REFRESH_JWT_EXPIRES_IN!,
+  } as JWT.SignOptions);
+}
 
 UserSchema.methods.comparePassword = async function (
   this: IUser,
