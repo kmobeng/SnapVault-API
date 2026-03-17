@@ -5,7 +5,6 @@ import JWT from "jsonwebtoken";
 import crypto from "crypto";
 
 export interface IUserMethods {
-  signRefreshToken(): string;
   signAccessToken(): string;
   comparePassword(candidatePassword: string): Promise<boolean>;
   changedPasswordAfter(JWTTimestamp: number): boolean;
@@ -39,7 +38,7 @@ const UserSchema = new Schema({
       message: "Password must match",
     },
   },
-  refreshToken: { type: String, default: null, select: false },
+  refreshTokenExpires: { type: Date, default: null, select: false },
   role: { type: String, default: "user", enum: ["user", "admin"] },
   provider: { type: String, default: "local", enum: ["local", "google"] },
   needToChangePassword: { type: Boolean, default: false },
@@ -69,12 +68,6 @@ UserSchema.methods.signAccessToken = function () {
     expiresIn: process.env.ACCESS_JWT_EXPIRES_IN!,
   } as JWT.SignOptions);
 };
-
-UserSchema.methods.signRefreshToken = function () {
-  return JWT.sign({ id: this._id }, process.env.JWT_SECRET!, {
-    expiresIn: process.env.REFRESH_JWT_EXPIRES_IN!,
-  } as JWT.SignOptions);
-}
 
 UserSchema.methods.comparePassword = async function (
   this: IUser,

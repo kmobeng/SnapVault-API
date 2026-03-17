@@ -28,7 +28,11 @@ export const uploadPhoto = async (
       albumId?.toString(),
     );
 
-    res.status(201).json({ status: "success", data: { photo: photoResult } });
+    res.status(201).json({
+      status: "success",
+      accessToken: res.locals.token,
+      data: { photo: photoResult },
+    });
   } catch (error) {
     next(error);
   }
@@ -50,9 +54,12 @@ export const getAllPhotos = async (
     if (photos.length === 0) {
       return res.status(200).json({ message: "No photos found" });
     }
-    res
-      .status(200)
-      .json({ status: "success", result: photos.length, data: { photos } });
+    res.status(200).json({
+      status: "success",
+      accessToken: res.locals.token,
+      result: photos.length,
+      data: { photos },
+    });
   } catch (error) {
     next(error);
   }
@@ -75,7 +82,13 @@ export const getSinglePhoto = async (
       req.currentUser._id.toString(),
     );
 
-    res.status(200).json({ status: "success", data: photo });
+    res
+      .status(200)
+      .json({
+        status: "success",
+        accessToken: res.locals.token,
+        data: photo,
+      });
   } catch (error) {
     next(error);
   }
@@ -95,7 +108,13 @@ export const updatePhoto = async (
     const userId = req.currentUser._id.toString();
     const photo = await updatePhotoService(title, visibility, photoId, userId);
 
-    res.status(200).json({ status: "success", data: photo });
+    res
+      .status(200)
+      .json({
+        status: "success",
+        accessToken: res.locals.token,
+        data: photo,
+      });
   } catch (error) {
     next(error);
   }
@@ -114,7 +133,12 @@ export const deletePhoto = async (
     const userId = req.params.userId || req.currentUser._id.toString();
     const photo = await deletePhotoService(photoId, userId, req.params.role);
 
-    res.status(200).json({ status: "success" });
+    res
+      .status(200)
+      .json({
+        status: "success",
+        accessToken: res.locals.token,
+      });
   } catch (error) {
     next(error);
   }

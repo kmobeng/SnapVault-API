@@ -5,7 +5,7 @@ import User, { IUser } from "../model/user.model";
 import sendEmail from "../utils/email.util";
 import crypto from "crypto";
 
-const Token = (res: Response, user: IUser) => {
+export const Token = (res: Response, user: IUser) => {
   const cookieOptions: any = {
     expires: new Date(
       Date.now() + Number(process.env.JWT_COOKIE_EXPIRES_IN) * 60 * 1000,
@@ -32,17 +32,21 @@ export const signUp = async (
   try {
     const { name, email, password, passwordConfirm, role } = req.body;
 
+    const refreshTokenExpires = new Date(
+      Date.now() +
+        Number(process.env.REFRESH_JWT_EXPIRES_IN) * 24 * 60 * 60 * 1000,
+    );
+
     const fetchedUser = await signUpService(
       name,
       email,
       password,
       passwordConfirm,
       role,
+      refreshTokenExpires,
     );
 
-    fetchedUser.refreshToken = fetchedUser.signRefreshToken();
-
-    const token = Token(res, fetchedUser);
+    const accessToken = Token(res, fetchedUser);
 
     const verificationToken = crypto.randomInt(10000, 100000).toString();
     fetchedUser.emailVerificationToken = crypto
@@ -82,7 +86,7 @@ export const signUp = async (
 
     res.status(201).json({
       status: "success",
-      token,
+      accessToken,
       message: "Email verification token sent to email",
       data: { user },
     });
@@ -102,14 +106,27 @@ export const login = async (
       throw createError("Please enter email and password", 400);
     }
 
-    const fetchedUser = await loginService(email, password);
+    const refreshTokenExpires = new Date(
+      Date.now() +
+        Number(process.env.REFRESH_JWT_EXPIRES_IN) * 24 * 60 * 60 * 1000,
+    );
 
-    const token = Token(res, fetchedUser);
+    const fetchedUser = await loginService(
+      email,
+      password,
+      refreshTokenExpires,
+    );
+
+    const accessToken = Token(res, fetchedUser);
 
     const user: any = fetchedUser.toObject();
     delete user.password;
 
-    res.status(200).json({ status: "success", token, data: { user } });
+    res.status(200).json({
+      status: "success",
+      accessToken,
+      data: { user },
+    });
   } catch (error) {
     next(error);
   }
@@ -197,7 +214,10 @@ export const resetPassword = async (
     user.passwordResetExpires = null;
 
     await user.save();
-    res.status(200).json({ status: "success", message: "Password changed" });
+    res.status(200).json({
+      status: "success",
+      message: "Password changed",
+    });
   } catch (error) {
     next(error);
   }
@@ -271,9 +291,11 @@ export const requestEmailVerify = async (
       throw createError("Error while sending email", 500);
     }
     // send response to user
-    res
-      .status(200)
-      .json({ status: "success", message: "OTP has been sent to your email" });
+    res.status(200).json({
+      status: "success",
+      accessToken: res.locals.token,
+      message: "OTP has been sent to your email",
+    });
   } catch (error) {
     next(error);
   }
@@ -308,7 +330,11 @@ export const verifyEmail = async (
     user.emailverificationTokenExpires = null;
     await user.save({ validateBeforeSave: false });
 
-    res.status(200).json({ status: "success", message: "Email verified!" });
+    res.status(200).json({
+      status: "success",
+      accessToken: res.locals.token,
+      message: "Email verified!",
+    });
   } catch (error) {
     next(error);
   }

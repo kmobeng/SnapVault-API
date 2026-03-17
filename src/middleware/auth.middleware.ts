@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from "express";
 import { createError } from "../utils/error.util";
 import User, { IUser } from "../model/user.model";
 import logger from "../config/wiston.config";
+import { Token } from "../controller/auth.controller";
 
 interface JWTPayload {
   id: string;
@@ -15,6 +16,7 @@ export const protect = async (
   res: Response,
   next: NextFunction,
 ) => {
+  let decoded: JWTPayload | undefined;
   try {
     let token: any;
     if (req.user) {
@@ -28,7 +30,7 @@ export const protect = async (
       throw createError("You are not logged in. Please login to continue", 401);
     }
 
-    const decoded = JWT.verify(token, process.env.JWT_SECRET!) as JWTPayload;
+    decoded = JWT.verify(token, process.env.JWT_SECRET!) as JWTPayload;
     const currentUser = await User.findById(decoded.id).select("+password");
 
     if (!currentUser) {
@@ -43,6 +45,20 @@ export const protect = async (
 
     next();
   } catch (error) {
+    console.log("this is the decoded jwt: ",decoded)
+    if (error instanceof JWT.JsonWebTokenError && decoded) {
+      const user = await User.findById(decoded.id);
+      if(!user){
+        return next(createError("The user with this token does not exist", 404));
+      }
+      if (user.refreshTokenExpires && user.refreshTokenExpires < new Date()) {
+        return next(createError("Your session has expired. Please login again", 401));
+      }
+
+      res.locals.accessToken = Token(res, user);
+      req.currentUser = user;
+      return next();
+    }
     next(error);
   }
 };

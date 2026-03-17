@@ -14,21 +14,28 @@ import cookieParser from "cookie-parser";
 
 const app = express();
 
-app.use(httpLogger)
+const allowedOrigin = process.env.CLIENT_URL;
+
+app.use(httpLogger);
 app.use(helmet());
-app.use(cors());
+app.use(
+  cors({
+    origin: allowedOrigin,
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
-app.use(cookieParser())
+app.use(cookieParser());
 
 app.use(
   cookieSession({
-    maxAge:  60 * 60 * 1000,
+    maxAge: 60 * 60 * 1000,
     keys: [process.env.COOKIE_KEY!],
   }),
 );
 
-app.use((req:Request, res:Response, next:NextFunction) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   if (req.session && !req.session.regenerate) {
     req.session.regenerate = (cb: any) => cb();
   }
@@ -49,5 +56,3 @@ app.use("/api/", albumRoute, photoRoute);
 app.use(errorHandler);
 
 export default app;
-
-

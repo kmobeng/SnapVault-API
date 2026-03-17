@@ -15,9 +15,12 @@ export const getAllUsers = async (
 ) => {
   try {
     const users = await getAllUsersService(req.query);
-    res
-      .status(200)
-      .json({ status: "success", result: users.length, data: users });
+    res.status(200).json({
+      status: "success",
+      accessToken: res.locals.token,
+      result: users.length,
+      data: users,
+    });
   } catch (error) {}
 };
 
@@ -32,7 +35,13 @@ export const getSingleUser = async (
       throw createError("No user Id provided", 400);
     }
     const user = await getSingleUserService(userId.toString());
-    res.status(200).json({ status: "success", data: user });
+    res
+      .status(200)
+      .json({
+        status: "success",
+        accessToken: res.locals.token,
+        data: user,
+      });
   } catch (error) {
     next(error);
   }
@@ -55,7 +64,13 @@ export const updateMe = async (
   try {
     const { name } = req.body;
     const user = await updateMeService(req.currentUser._id.toString(), name);
-    res.status(200).json({ status: "success", data: user });
+    res
+      .status(200)
+      .json({
+        status: "success",
+        accessToken: res.locals.token,
+        data: user,
+      });
   } catch (error) {
     next(error);
   }
@@ -72,7 +87,12 @@ export const deleteUser = async (
       throw createError("No user ID provided", 400);
     }
     const user = await deleteUserService(userId.toString());
-    res.status(200).json({ status: "success" });
+    res
+      .status(200)
+      .json({
+        status: "success",
+        accessToken: res.locals.token,
+      });
   } catch (error) {
     next(error);
   }
@@ -107,9 +127,11 @@ export const changePassword = async (
       currentPassword,
     );
 
-    res
-      .status(200)
-      .json({ status: "success", message: "Password changed successfully" });
+    res.status(200).json({
+      status: "success",
+      accessToken: res.locals.token,
+      message: "Password changed successfully",
+    });
   } catch (error) {
     next(error);
   }
