@@ -4,10 +4,11 @@ A secure RESTful API for storing and managing photos and albums. Built with Node
 
 ## Features
 
-- Authentication with JWT in HttpOnly cookies
+- Authentication with access + refresh token cookies (HttpOnly)
 - Google OAuth 2.0 login via Passport
 - Email verification flow with OTP token and resend endpoint
 - Forgot/reset password flow via email
+- Automatic access-token refresh via middleware when access token expires
 - Photo upload and storage via Cloudinary
 - Album management with user ownership checks
 - Role-based authorization for admin actions
@@ -60,6 +61,7 @@ Required variables in `.env`:
 # Server
 PORT=4000
 NODE_ENV=development
+CLIENT_URL=http://localhost:4000
 
 # Database
 DB_URL=mongodb://localhost:27017/photo-vault
@@ -69,8 +71,9 @@ REDIS_URL=redis://localhost:6379
 
 # JWT
 JWT_SECRET=your_jwt_secret
-ACCESS_JWT_EXPIRES_IN=7d
-ACCESS_JWT_COOKIE_EXPIRES_IN=7
+ACCESS_JWT_EXPIRES_IN=expiration_time
+ACCESS_JWT_COOKIE_EXPIRES_IN=expiration_time
+REFRESH_JWT_COOKIE_EXPIRES_IN=expiration_time
 
 # Cookie Session (OAuth)
 COOKIE_KEY=your_cookie_session_key
@@ -90,6 +93,10 @@ EMAIL_FROM=Photo Vault <noreply@yourdomain.com>
 SENDGRID_USERNAME=apikey
 SENDGRID_PASSWORD=your_sendgrid_api_key
 ```
+
+`ACCESS_JWT_COOKIE_EXPIRES_IN` is interpreted in minutes by the code.
+
+`REFRESH_JWT_COOKIE_EXPIRES_IN` is interpreted in days.
 
 `CLOUDINARY_CLOUD_NAME` is currently hardcoded in the project config, so it is not required in `.env` unless you later move it to environment config.
 
@@ -113,7 +120,8 @@ npm run start
 ## Security and Access Rules
 
 - Passwords are hashed with bcrypt.
-- JWT is stored in HttpOnly cookie; secure/sameSite are enabled in production.
+- Access and refresh tokens are stored in HttpOnly cookies; secure/sameSite are enabled in production.
+- On expired/invalid access token, middleware checks refresh token and issues a new access token when valid.
 - Password reset and email verification tokens are hashed with SHA-256 before storage.
 - Route protections use protect, restrictTo, needToChangePassword, and isEmailVerified middleware.
 - Login and reset-password routes are rate-limited.
@@ -135,6 +143,11 @@ Base URL: /api
 | GET    | /google/redirect       | Google OAuth callback                            | Public                        |
 | POST   | /verify-email          | Verify email with token in body                  | Auth required                 |
 | POST   | /verify-email/request  | Request a new email verification token           | Auth required                 |
+
+Notes:
+
+- Google OAuth users are created with `needToChangePassword=true`, so they must call `PATCH /api/user/change-password` before accessing routes protected by `needToChangePassword`.
+- Auth-protected responses may include a refreshed `accessToken` in response body when middleware renews it.
 
 Verify email request body:
 
@@ -162,6 +175,13 @@ Then:
 - Admin only: GET /:userId
 - Admin only: DELETE /:userId
 
+Supported query options for `GET /api/user`:
+
+- `page`, `limit`
+- `sort` (comma-separated fields)
+- `fields` (select returned fields)
+- Mongo comparison filters like `createdAt[gte]`
+
 ### Photo Routes (/api)
 
 Global middleware: protect, isEmailVerified, needToChangePassword, apiLimiter
@@ -174,6 +194,8 @@ Global middleware: protect, isEmailVerified, needToChangePassword, apiLimiter
 - GET /:userId/photo
 - GET /:userId/photo/:photoId
 - Admin only: DELETE /:userId/photo/:photoId
+
+Listing endpoints support `page`, `limit`, `sort`, and `fields` query options.
 
 Upload photo payload:
 
@@ -198,6 +220,8 @@ Global middleware: protect, isEmailVerified, needToChangePassword, apiLimiter
 - DELETE /album/:albumId
 - GET /:userId/album
 - GET /:userId/album/:albumId
+
+Listing endpoints support `page`, `limit`, `sort`, and `fields` query options.
 
 ## Project Structure
 
