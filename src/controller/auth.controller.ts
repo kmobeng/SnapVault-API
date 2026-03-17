@@ -53,7 +53,7 @@ export const signUp = async (
       .createHash("sha256")
       .update(verificationToken)
       .digest("hex");
-    fetchedUser.emailverificationTokenExpires = new Date(
+    fetchedUser.emailVerificationTokenExpires = new Date(
       Date.now() + 30 * 60 * 1000,
     );
 
@@ -62,7 +62,8 @@ export const signUp = async (
     const user: any = fetchedUser.toObject();
     delete user.password;
     delete user.emailVerificationToken;
-    delete user.emailverificationTokenExpires;
+    delete user.emailVerificationTokenExpires;
+    delete user.refreshTokenExpires;
 
     const message = `Welcome to Photo Vault, ${user.name}!
     Please verify your email to access all features of our application with this token: ${verificationToken}
@@ -77,11 +78,14 @@ export const signUp = async (
       });
     } catch (error) {
       fetchedUser.emailVerificationToken = null;
-      fetchedUser.emailverificationTokenExpires = null;
+      fetchedUser.emailVerificationTokenExpires = null;
 
       await fetchedUser.save({ validateBeforeSave: false });
 
-      throw createError("Could not send reset email, please try again", 500);
+      throw createError(
+        "Could not send verification email, please try again",
+        500,
+      );
     }
 
     res.status(201).json({
@@ -121,6 +125,7 @@ export const login = async (
 
     const user: any = fetchedUser.toObject();
     delete user.password;
+    delete user.refreshTokenExpires;
 
     res.status(200).json({
       status: "success",
@@ -253,6 +258,7 @@ export const requestEmailVerify = async (
     if (req.currentUser.isEmailVerified === true) {
       throw createError("Email already verified", 400);
     }
+
     // generate email with crypto package and hash it
     const emailToken = crypto.randomInt(10000, 100000).toString();
     const hashedToken = crypto
@@ -266,8 +272,8 @@ export const requestEmailVerify = async (
       req.currentUser._id,
       {
         $set: {
-          verifyEmailToken: hashedToken,
-          emailTokenExpires: new Date(Date.now() + 45 * 60 * 1000),
+          emailVerificationToken: hashedToken,
+          emailVerificationTokenExpires: new Date(Date.now() + 30 * 60 * 1000),
         },
       },
       { new: true },
@@ -280,12 +286,12 @@ export const requestEmailVerify = async (
     try {
       await sendEmail({
         email,
-        subject: "VERIFY YOUR EMAIL. (THIS CODE IS VALID FOR 5 MINS)",
+        subject: "VERIFY YOUR EMAIL. (THIS CODE IS VALID FOR 30 MINS)",
         message,
       });
     } catch (error) {
       saveToken!.emailVerificationToken = null;
-      saveToken!.emailverificationTokenExpires = null;
+      saveToken!.emailVerificationTokenExpires = null;
       await saveToken!.save({ validateBeforeSave: false });
 
       throw createError("Error while sending email", 500);
@@ -318,16 +324,16 @@ export const verifyEmail = async (
 
     const user = await User.findOne({
       emailVerificationToken: hashedToken,
-      emailverificationTokenExpires: { $gt: new Date(Date.now()) },
+      emailVerificationTokenExpires: { $gt: new Date(Date.now()) },
     });
 
     if (!user) {
-      throw createError("Invalid or expired token", 404);
+      throw createError("Invalid or expired verification token", 404);
     }
 
     user.isEmailVerified = true;
     user.emailVerificationToken = null;
-    user.emailverificationTokenExpires = null;
+    user.emailVerificationTokenExpires = null;
     await user.save({ validateBeforeSave: false });
 
     res.status(200).json({

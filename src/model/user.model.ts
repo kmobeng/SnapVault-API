@@ -44,7 +44,7 @@ const UserSchema = new Schema({
   needToChangePassword: { type: Boolean, default: false },
   isEmailVerified: { type: Boolean, default: false },
   emailVerificationToken: { type: String, default: null, select: false },
-  emailverificationTokenExpires: { type: Date, default: null, select: false },
+  emailVerificationTokenExpires: { type: Date, default: null, select: false },
   createdAt: { type: Date, default: Date.now },
   passwordChangedAt: Date,
   passwordResetToken: { type: String, default: null, select: false },
