@@ -38,7 +38,7 @@ export const getAllAlbums = async (
     const userId = req.params.userId || req.currentUser._id;
     const albums = await getAllAlbumsService(userId, req.query);
     if (albums.length < 1) {
-      return res.status(404).json({ message: "No albums found" });
+      return res.status(404).json({ message: "No albums found", accessToken: res.locals.token });
     }
 
     res.status(200).json({

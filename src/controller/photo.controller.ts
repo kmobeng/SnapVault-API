@@ -52,7 +52,9 @@ export const getAllPhotos = async (
     );
 
     if (photos.length === 0) {
-      return res.status(200).json({ message: "No photos found" });
+      return res
+        .status(200)
+        .json({ message: "No photos found", accessToken: res.locals.token });
     }
     res.status(200).json({
       status: "success",
@@ -82,13 +84,11 @@ export const getSinglePhoto = async (
       req.currentUser._id.toString(),
     );
 
-    res
-      .status(200)
-      .json({
-        status: "success",
-        accessToken: res.locals.token,
-        data: photo,
-      });
+    res.status(200).json({
+      status: "success",
+      accessToken: res.locals.token,
+      data: photo,
+    });
   } catch (error) {
     next(error);
   }
@@ -108,13 +108,11 @@ export const updatePhoto = async (
     const userId = req.currentUser._id.toString();
     const photo = await updatePhotoService(title, visibility, photoId, userId);
 
-    res
-      .status(200)
-      .json({
-        status: "success",
-        accessToken: res.locals.token,
-        data: photo,
-      });
+    res.status(200).json({
+      status: "success",
+      accessToken: res.locals.token,
+      data: photo,
+    });
   } catch (error) {
     next(error);
   }
@@ -133,12 +131,10 @@ export const deletePhoto = async (
     const userId = req.params.userId || req.currentUser._id.toString();
     const photo = await deletePhotoService(photoId, userId, req.params.role);
 
-    res
-      .status(200)
-      .json({
-        status: "success",
-        accessToken: res.locals.token,
-      });
+    res.status(200).json({
+      status: "success",
+      accessToken: res.locals.token,
+    });
   } catch (error) {
     next(error);
   }

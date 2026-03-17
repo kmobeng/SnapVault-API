@@ -21,7 +21,9 @@ export const getAllUsers = async (
       result: users.length,
       data: users,
     });
-  } catch (error) {}
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const getSingleUser = async (

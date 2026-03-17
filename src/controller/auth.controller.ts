@@ -5,10 +5,10 @@ import User, { IUser } from "../model/user.model";
 import sendEmail from "../utils/email.util";
 import crypto from "crypto";
 
-export const Token = (res: Response, user: IUser) => {
+export const Token = async (res: Response, user: IUser) => {
   const cookieOptions: any = {
     expires: new Date(
-      Date.now() + Number(process.env.JWT_COOKIE_EXPIRES_IN) * 60 * 1000,
+      Date.now() + Number(process.env.ACCESS_JWT_COOKIE_EXPIRES_IN) * 60 * 1000,
     ),
     // secure: true,
     httpOnly: true,
@@ -19,9 +19,10 @@ export const Token = (res: Response, user: IUser) => {
     ((cookieOptions.secure = true), (cookieOptions.sameSite = "strict"));
   }
 
-  const token = user.signAccessToken();
-  res.cookie("token", token, cookieOptions);
-  return token;
+  const accessToken = user.signAccessToken();
+  res.cookie("accessToken", accessToken, cookieOptions);
+
+  return accessToken;
 };
 
 export const signUp = async (
@@ -32,27 +33,56 @@ export const signUp = async (
   try {
     const { name, email, password, passwordConfirm, role } = req.body;
 
-    const refreshTokenExpires = new Date(
-      Date.now() +
-        Number(process.env.REFRESH_JWT_EXPIRES_IN) * 24 * 60 * 60 * 1000,
-    );
-
     const fetchedUser = await signUpService(
       name,
       email,
       password,
       passwordConfirm,
       role,
-      refreshTokenExpires,
     );
 
-    const accessToken = Token(res, fetchedUser);
+    const accessToken = await Token(res, fetchedUser);
+
+    const refreshToken = crypto.randomBytes(32).toString("hex");
+    fetchedUser.refreshToken = crypto
+      .createHash("sha256")
+      .update(refreshToken)
+      .digest("hex");
+
+    const refreshTokenExpires = new Date(
+      Date.now() +
+        Number(process.env.REFRESH_JWT_COOKIE_EXPIRES_IN) * 24 * 60 * 60 * 1000,
+    );
+
+    fetchedUser.refreshTokenExpires = refreshTokenExpires;
+
+    let RefreshCookieOptions: any = {
+      expires: new Date(
+        Date.now() +
+          Number(process.env.REFRESH_JWT_COOKIE_EXPIRES_IN) *
+            24 *
+            60 *
+            60 *
+            1000,
+      ),
+      // secure: true,
+      httpOnly: true,
+      // sameSite: "strict",
+    };
+
+    if (process.env.NODE_ENV === "production") {
+      ((RefreshCookieOptions.secure = true),
+        (RefreshCookieOptions.sameSite = "strict"));
+    }
+
+    res.cookie("refreshToken", refreshToken, RefreshCookieOptions);
 
     const verificationToken = crypto.randomInt(10000, 100000).toString();
     fetchedUser.emailVerificationToken = crypto
       .createHash("sha256")
       .update(verificationToken)
       .digest("hex");
+
     fetchedUser.emailVerificationTokenExpires = new Date(
       Date.now() + 30 * 60 * 1000,
     );
@@ -63,6 +93,7 @@ export const signUp = async (
     delete user.password;
     delete user.emailVerificationToken;
     delete user.emailVerificationTokenExpires;
+    delete user.refreshToken;
     delete user.refreshTokenExpires;
 
     const message = `Welcome to Photo Vault, ${user.name}!
@@ -110,21 +141,50 @@ export const login = async (
       throw createError("Please enter email and password", 400);
     }
 
+    const refreshToken = crypto.randomBytes(32).toString("hex");
+    const hashedRefreshToken = crypto
+      .createHash("sha256")
+      .update(refreshToken)
+      .digest("hex");
+
     const refreshTokenExpires = new Date(
       Date.now() +
-        Number(process.env.REFRESH_JWT_EXPIRES_IN) * 24 * 60 * 60 * 1000,
+        Number(process.env.REFRESH_JWT_COOKIE_EXPIRES_IN) * 24 * 60 * 60 * 1000,
     );
 
     const fetchedUser = await loginService(
       email,
       password,
+      hashedRefreshToken,
       refreshTokenExpires,
     );
 
-    const accessToken = Token(res, fetchedUser);
+    const accessToken = await Token(res, fetchedUser);
+
+    let RefreshCookieOptions: any = {
+      expires: new Date(
+        Date.now() +
+          Number(process.env.REFRESH_JWT_COOKIE_EXPIRES_IN) *
+            24 *
+            60 *
+            60 *
+            1000,
+      ),
+      // secure: true,
+      httpOnly: true,
+      // sameSite: "strict",
+    };
+
+    if (process.env.NODE_ENV === "production") {
+      ((RefreshCookieOptions.secure = true),
+        (RefreshCookieOptions.sameSite = "strict"));
+    }
+
+    res.cookie("refreshToken", refreshToken, RefreshCookieOptions);
 
     const user: any = fetchedUser.toObject();
     delete user.password;
+    delete user.refreshToken;
     delete user.refreshTokenExpires;
 
     res.status(200).json({

@@ -2,7 +2,7 @@ import JWT from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
 import { createError } from "../utils/error.util";
 import User, { IUser } from "../model/user.model";
-import logger from "../config/wiston.config";
+import crypto from "crypto";
 import { Token } from "../controller/auth.controller";
 
 interface JWTPayload {
@@ -18,19 +18,26 @@ export const protect = async (
 ) => {
   let decoded: JWTPayload | undefined;
   try {
-    let token: any;
+    let accessToken: any;
     if (req.user) {
       req.currentUser = req.user as IUser;
       return next();
     }
 
-    token = req.cookies.token || req.headers.authorization?.split(" ")[1];
+    if (req.cookies.accessToken) {
+      accessToken = req.cookies.accessToken;
+    } else if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith("Bearer")
+    ) {
+      accessToken = req.headers.authorization.split(" ")[1];
+    }
 
-    if (!token) {
+    if (!accessToken) {
       throw createError("You are not logged in. Please login to continue", 401);
     }
 
-    decoded = JWT.verify(token, process.env.JWT_SECRET!) as JWTPayload;
+    decoded = JWT.verify(accessToken, process.env.JWT_SECRET!) as JWTPayload;
     const currentUser = await User.findById(decoded.id).select("+password");
 
     if (!currentUser) {
@@ -44,19 +51,37 @@ export const protect = async (
     req.currentUser = currentUser;
 
     next();
-  } catch (error) {
-    console.log("this is the decoded jwt: ",decoded)
-    if (error instanceof JWT.JsonWebTokenError && decoded) {
-      const user = await User.findById(decoded.id);
-      if(!user){
-        return next(createError("The user with this token does not exist", 404));
-      }
-      if (user.refreshTokenExpires && user.refreshTokenExpires < new Date()) {
-        return next(createError("Your session has expired. Please login again", 401));
+  } catch (error: any) {
+    if (
+      error.name === "JsonWebTokenError" ||
+      error.name === "TokenExpiredError"
+    ) {
+      const refreshToken = req.cookies.refreshToken;
+      if (!refreshToken) {
+        return next(
+          createError("You are not logged in please login to continue", 401),
+        );
       }
 
-      res.locals.accessToken = Token(res, user);
+      const hashedToken = crypto
+        .createHash("sha256")
+        .update(refreshToken)
+        .digest("hex");
+
+      const user = await User.findOne({
+        refreshToken: hashedToken,
+        refreshTokenExpires: { $gt: Date.now() },
+      });
+
+      if (!user) {
+        return next(createError("Session Expired. Please login again", 401));
+      }
+      const accessToken = await Token(res, user);
+
+      res.locals.token = accessToken;
+
       req.currentUser = user;
+
       return next();
     }
     next(error);

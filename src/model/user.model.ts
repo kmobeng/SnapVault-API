@@ -38,6 +38,7 @@ const UserSchema = new Schema({
       message: "Password must match",
     },
   },
+  refreshToken: { type: String, default: null, select: false },
   refreshTokenExpires: { type: Date, default: null, select: false },
   role: { type: String, default: "user", enum: ["user", "admin"] },
   provider: { type: String, default: "local", enum: ["local", "google"] },
@@ -68,6 +69,8 @@ UserSchema.methods.signAccessToken = function () {
     expiresIn: process.env.ACCESS_JWT_EXPIRES_IN!,
   } as JWT.SignOptions);
 };
+
+
 
 UserSchema.methods.comparePassword = async function (
   this: IUser,

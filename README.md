@@ -70,7 +70,7 @@ REDIS_URL=redis://localhost:6379
 # JWT
 JWT_SECRET=your_jwt_secret
 ACCESS_JWT_EXPIRES_IN=7d
-JWT_COOKIE_EXPIRES_IN=7
+ACCESS_JWT_COOKIE_EXPIRES_IN=7
 
 # Cookie Session (OAuth)
 COOKIE_KEY=your_cookie_session_key

@@ -8,7 +8,6 @@ export const signUpService = async (
   password: string,
   passwordConfirm: string,
   role: string,
-  refreshTokenExpires: Date,
 ) => {
   try {
     const usersKey = `users:all`;
@@ -18,7 +17,6 @@ export const signUpService = async (
       password,
       passwordConfirm,
       role,
-      refreshTokenExpires,
     });
     if (!user) {
       throw createError("Error while creating user", 400);
@@ -33,12 +31,16 @@ export const signUpService = async (
 export const loginService = async (
   email: string,
   candidatePassword: string,
-  refreshTokenExpires: Date,
+  refreshToken: string,
+  refreshTokenExpires: Date
 ) => {
   try {
     const user = await User.findOneAndUpdate(
       { email },
-      { $set: { refreshTokenExpires } },
+      {
+        refreshToken,
+        refreshTokenExpires,
+      },
     ).select("+password");
     if (!user || !(await user.comparePassword(candidatePassword))) {
       throw createError("email or password is incorrect", 400);
