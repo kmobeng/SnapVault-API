@@ -111,6 +111,8 @@ export const changePasswordService = async (
 
     user.password = newPassword;
     user.passwordConfirm = newPasswordConfirm;
+    user.refreshToken = null;
+    user.refreshTokenExpires = null;
     await user.save();
 
     return user;
