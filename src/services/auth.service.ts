@@ -50,3 +50,20 @@ export const loginService = async (
     throw error;
   }
 };
+
+export const logoutService = async (userId: string) => {
+  try {
+    const user = await User.findByIdAndUpdate(userId, {
+      refreshToken: null,
+      refreshTokenExpires: null,
+    });
+
+    if (!user) {
+      throw createError("The user with this token does not exist", 404);
+    }
+
+    return user;
+  } catch (error) {
+    throw error;
+  }
+};

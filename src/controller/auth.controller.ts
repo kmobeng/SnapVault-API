@@ -1,11 +1,15 @@
 import { Request, Response, NextFunction } from "express";
 import { createError } from "../utils/error.util";
-import { loginService, signUpService } from "../services/auth.service";
+import {
+  loginService,
+  logoutService,
+  signUpService,
+} from "../services/auth.service";
 import User, { IUser } from "../model/user.model";
 import sendEmail from "../utils/email.util";
 import crypto from "crypto";
 
-export const Token = async (res: Response, user: IUser) => {
+const setAccessTokenCookieOptions = () => {
   const cookieOptions: any = {
     expires: new Date(
       Date.now() + Number(process.env.ACCESS_JWT_COOKIE_EXPIRES_IN) * 60 * 1000,
@@ -18,6 +22,30 @@ export const Token = async (res: Response, user: IUser) => {
   if (process.env.NODE_ENV === "production") {
     ((cookieOptions.secure = true), (cookieOptions.sameSite = "strict"));
   }
+  return cookieOptions;
+};
+
+const setRefreshTokenCookieOptions = () => {
+  let RefreshCookieOptions: any = {
+    expires: new Date(
+      Date.now() +
+        Number(process.env.REFRESH_JWT_COOKIE_EXPIRES_IN) * 24 * 60 * 60 * 1000,
+    ),
+    // secure: true,
+    httpOnly: true,
+    // sameSite: "strict",
+  };
+
+  if (process.env.NODE_ENV === "production") {
+    ((RefreshCookieOptions.secure = true),
+      (RefreshCookieOptions.sameSite = "strict"));
+  }
+
+  return RefreshCookieOptions;
+};
+
+export const Token = async (res: Response, user: IUser) => {
+  const cookieOptions = setAccessTokenCookieOptions();
 
   const accessToken = user.signAccessToken();
   res.cookie("accessToken", accessToken, cookieOptions);
@@ -56,24 +84,7 @@ export const signUp = async (
 
     fetchedUser.refreshTokenExpires = refreshTokenExpires;
 
-    let RefreshCookieOptions: any = {
-      expires: new Date(
-        Date.now() +
-          Number(process.env.REFRESH_JWT_COOKIE_EXPIRES_IN) *
-            24 *
-            60 *
-            60 *
-            1000,
-      ),
-      // secure: true,
-      httpOnly: true,
-      // sameSite: "strict",
-    };
-
-    if (process.env.NODE_ENV === "production") {
-      ((RefreshCookieOptions.secure = true),
-        (RefreshCookieOptions.sameSite = "strict"));
-    }
+    const RefreshCookieOptions = setRefreshTokenCookieOptions();
 
     res.cookie("refreshToken", refreshToken, RefreshCookieOptions);
 
@@ -161,24 +172,7 @@ export const login = async (
 
     const accessToken = await Token(res, fetchedUser);
 
-    let RefreshCookieOptions: any = {
-      expires: new Date(
-        Date.now() +
-          Number(process.env.REFRESH_JWT_COOKIE_EXPIRES_IN) *
-            24 *
-            60 *
-            60 *
-            1000,
-      ),
-      // secure: true,
-      httpOnly: true,
-      // sameSite: "strict",
-    };
-
-    if (process.env.NODE_ENV === "production") {
-      ((RefreshCookieOptions.secure = true),
-        (RefreshCookieOptions.sameSite = "strict"));
-    }
+    const RefreshCookieOptions = setRefreshTokenCookieOptions();
 
     res.cookie("refreshToken", refreshToken, RefreshCookieOptions);
 
@@ -400,6 +394,31 @@ export const verifyEmail = async (
       status: "success",
       accessToken: res.locals.token,
       message: "Email verified!",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const logout = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.currentUser._id;
+
+    await logoutService(userId.toString());
+
+    const accessTokenOption = setAccessTokenCookieOptions();
+    const refreshTokenOption = setRefreshTokenCookieOptions();
+
+    res.clearCookie("accessToken", accessTokenOption);
+    res.clearCookie("refreshToken", refreshTokenOption);
+
+    res.status(200).json({
+      status: "success",
+      message: "Logged out successfully",
     });
   } catch (error) {
     next(error);

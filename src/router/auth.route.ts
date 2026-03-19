@@ -3,6 +3,7 @@ import {
   forgotPassword,
   googleRedirect,
   login,
+  logout,
   requestEmailVerify,
   resetPassword,
   signUp,
@@ -42,5 +43,6 @@ router.use(protect);
 
 router.post("/verify-email/", verifyEmail);
 router.post("/verify-email/request", requestEmailVerify);
+router.post("/logout", logout);
 
 export default router;
