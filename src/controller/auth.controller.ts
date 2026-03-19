@@ -289,11 +289,40 @@ export const googleRedirect = async (
 ) => {
   try {
     const user = req.user as IUser;
+    const authAction =
+      (req.authInfo as { authAction?: "signup" | "login" } | undefined)
+        ?.authAction ?? "login";
+
+    const refreshToken = crypto.randomBytes(32).toString("hex");
+    user.refreshToken = crypto
+      .createHash("sha256")
+      .update(refreshToken)
+      .digest("hex");
+
+    const refreshTokenExpires = new Date(
+      Date.now() +
+        Number(process.env.REFRESH_JWT_COOKIE_EXPIRES_IN) * 24 * 60 * 60 * 1000,
+    );
+
+    user.refreshTokenExpires = refreshTokenExpires;
+
+    await user.save({ validateBeforeSave: false });
 
     Token(res, user);
+    const refreshCookieOptions = setRefreshTokenCookieOptions();
+    res.cookie("refreshToken", user.refreshToken, refreshCookieOptions);
+
+    const userResponse: any = user.toObject();
+    delete userResponse.password;
+    delete userResponse.refreshToken;
+    delete userResponse.refreshTokenExpires;
+
     res.status(200).json({
       status: "success",
-      message: "Logged in with Google. Please set password to continue.",
+      message:
+        authAction === "signup"
+          ? "Account created with Google. Please set password to continue."
+          : "Logged in with Google successfully.",
       data: { user },
     });
   } catch (error) {

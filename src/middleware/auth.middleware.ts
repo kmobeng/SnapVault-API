@@ -19,10 +19,6 @@ export const protect = async (
   let decoded: JWTPayload | undefined;
   try {
     let accessToken: any;
-    if (req.user) {
-      req.currentUser = req.user as IUser;
-      return next();
-    }
 
     if (req.cookies.accessToken) {
       accessToken = req.cookies.accessToken;

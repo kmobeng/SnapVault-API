@@ -31,7 +31,7 @@ passport.use(
         const currentUser = await User.findOne({ googleId: profile.id });
 
         if (currentUser) {
-          done(null, currentUser);
+          done(null, currentUser, { authAction: "login" });
         } else {
           const email = profile.emails?.[0]?.value;
           if (!email) {
@@ -56,8 +56,7 @@ passport.use(
           const usersKey = `users:all`;
           RedisClient.del(usersKey);
 
-          
-          done(null, user);
+          done(null, user, { authAction: "signup" });
         }
       } catch (error) {
         done(error as Error);
