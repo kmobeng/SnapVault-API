@@ -102,6 +102,7 @@ export const changePasswordService = async (
       user.passwordConfirm = newPasswordConfirm;
       user.needToChangePassword = false;
       await user.save();
+
       return user;
     }
 

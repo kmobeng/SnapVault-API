@@ -61,6 +61,15 @@ UserSchema.pre("save", async function (this: any) {
 
 UserSchema.pre("save", async function () {
   if (!this.isModified("password") || this.isNew) return;
+
+  // First-time password setup should keep the current token valid.
+  if (
+    this.isModified("needToChangePassword") &&
+    this.needToChangePassword === false
+  ) {
+    return;
+  }
+
   this.passwordChangedAt = new Date(Date.now() - 1000);
 });
 

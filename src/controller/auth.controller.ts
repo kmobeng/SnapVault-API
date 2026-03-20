@@ -308,9 +308,9 @@ export const googleRedirect = async (
 
     await user.save({ validateBeforeSave: false });
 
-    Token(res, user);
+    const accessToken = await Token(res, user);
     const refreshCookieOptions = setRefreshTokenCookieOptions();
-    res.cookie("refreshToken", user.refreshToken, refreshCookieOptions);
+    res.cookie("refreshToken", refreshToken, refreshCookieOptions);
 
     const userResponse: any = user.toObject();
     delete userResponse.password;
@@ -319,11 +319,12 @@ export const googleRedirect = async (
 
     res.status(200).json({
       status: "success",
+      accessToken,
       message:
         authAction === "signup"
           ? "Account created with Google. Please set password to continue."
           : "Logged in with Google successfully.",
-      data: { user },
+      data: { user:userResponse },
     });
   } catch (error) {
     next(error);
