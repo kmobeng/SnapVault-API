@@ -324,7 +324,7 @@ export const googleRedirect = async (
         authAction === "signup"
           ? "Account created with Google. Please set password to continue."
           : "Logged in with Google successfully.",
-      data: { user:userResponse },
+      data: { user: userResponse },
     });
   } catch (error) {
     next(error);

@@ -79,8 +79,6 @@ UserSchema.methods.signAccessToken = function () {
   } as JWT.SignOptions);
 };
 
-
-
 UserSchema.methods.comparePassword = async function (
   this: IUser,
   candidatePassword: string,

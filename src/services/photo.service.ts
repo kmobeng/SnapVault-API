@@ -12,7 +12,7 @@ export const uploadPhotoService = async (
   visibility: string,
   userId: string,
   photo: any,
-  albumId?: any
+  albumId?: any,
 ) => {
   let publicId;
   try {
@@ -39,7 +39,7 @@ export const uploadPhotoService = async (
           } else {
             resolve(result);
           }
-        }
+        },
       );
 
       stream.end(photo.buffer);
@@ -71,7 +71,7 @@ export const uploadPhotoService = async (
     if (publicId) {
       try {
         await cloudinary.uploader.destroy(publicId);
-       logger.info("Cloudinary cleanup successful");
+        logger.info("Cloudinary cleanup successful");
       } catch (deleteError) {
         logger.error("Failed to cleanup Cloudinary:", deleteError);
       }
@@ -83,7 +83,7 @@ export const uploadPhotoService = async (
 export const getAllPhotosService = async (
   userId: string,
   reqUserId: string,
-  queryString: any
+  queryString: any,
 ) => {
   if (userId !== reqUserId) {
     queryString.visibility = "public";
@@ -103,7 +103,7 @@ export const getAllPhotosService = async (
     if (cachedPhotos) {
       return JSON.parse(cachedPhotos);
     }
-    const filter: any = { user: userId };
+    const filter: any = { user: userId, isDeleted: false };
 
     const features = new APIFeatures(Photo.find(filter), queryString)
       .filter()
@@ -124,7 +124,7 @@ export const getAllPhotosService = async (
 export const getSinglePhotoService = async (
   photoId: any,
   userId: string,
-  reqUserId: string
+  reqUserId: string,
 ) => {
   try {
     if (
@@ -142,7 +142,7 @@ export const getSinglePhotoService = async (
     if (cachedPhoto) {
       return JSON.parse(cachedPhoto);
     }
-    const query: any = { _id: photoId, user: userId };
+    const query: any = { _id: photoId, user: userId, isDeleted: false };
     if (!isOwner) {
       query.visibility = "public";
     }
@@ -164,7 +164,7 @@ export const updatePhotoService = async (
   title: string,
   visibility: string,
   photoId: any,
-  userId: string
+  userId: string,
 ) => {
   try {
     if (
@@ -175,9 +175,9 @@ export const updatePhotoService = async (
     }
 
     const photo: any = await Photo.findOneAndUpdate(
-      { _id: photoId, user: userId },
+      { _id: photoId, user: userId, isDeleted: false },
       { $set: { title, visibility } },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
     if (!photo) {
       throw createError("No photo Id", 400);
@@ -199,27 +199,61 @@ export const updatePhotoService = async (
 export const deletePhotoService = async (
   photoId: any,
   userId: string,
-  role?: string
+  role?: string,
 ) => {
+  try {
+    // Validate photoId and userId
+    if (!mongoose.Types.ObjectId.isValid(photoId)) {
+      throw createError("Invalid photo ID", 400);
+    }
+
+    // If role is not provided, only allow deletion of photos owned by the user
+    let query: any;
+
+    if (role === "admin") {
+      query = { _id: photoId, visibility: "public" };
+    } else {
+      query = { _id: photoId, user: userId };
+    }
+
+    // Find and delete the photo
+    const photo: any = await Photo.findOneAndDelete(query);
+
+    if (!photo) {
+      throw createError("No photo found", 404);
+    }
+
+    // Delete the photo from Cloudinary
+    await cloudinary.uploader.destroy(photo.publicId);
+
+    // Invalidate related Redis cache
+    const photosKey = await RedisClient.keys(`photos:${userId}:*`);
+
+    if (photosKey.length !== 0) {
+      await RedisClient.del(...photosKey);
+    }
+    await RedisClient.del(`photo:${userId}:${photoId}:owner`);
+    await RedisClient.del(`photo:${userId}:${photoId}:public`);
+
+    return photo;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const softDeletePhotoService = async (photoId: any, userId: string) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(photoId)) {
       throw createError("Invalid photo ID", 400);
     }
 
-    let query: any;
-    if (!role) {
-      query = { _id: photoId, user: userId };
-    } else {
-      query = { _id: photoId, user: userId, visibility: "public" };
-    }
+    const photo: any = await Photo.findOneAndUpdate(
+      { _id: photoId, user: userId, isDeleted: false },
+      { $set: { isDeleted: true, deletedAt: new Date() } },
+      { new: true },
+    );
 
-    const photo: any = await Photo.findOneAndDelete(query);
-    if (!photo) {
-      throw createError("No photo found", 404);
-    }
-
-    await cloudinary.uploader.destroy(photo.publicId);
-
+    // Invalidate related Redis cache
     const photosKey = await RedisClient.keys(`photos:${userId}:*`);
 
     if (photosKey.length !== 0) {

@@ -34,13 +34,15 @@ export const protect = async (
     }
 
     decoded = JWT.verify(accessToken, process.env.JWT_SECRET!) as JWTPayload;
-    const currentUser = await User.findById(decoded.id).select("+password");
+    const currentUser = await User.findById(decoded.id).select(
+      "+password +refreshToken +refreshTokenExpires",
+    );
 
     if (!currentUser) {
       throw createError("The user with this token does not exist", 404);
     }
 
-    if(!currentUser.refreshToken && !currentUser.refreshTokenExpires) {
+    if (!currentUser.refreshToken || !currentUser.refreshTokenExpires) {
       throw createError("Session expired. Please login again", 401);
     }
 

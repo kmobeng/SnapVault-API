@@ -13,6 +13,8 @@ const PhotoSchema = new Schema({
   },
   album: { type: Schema.Types.ObjectId, ref: "Album" },
   createdAt: { type: Date, default: Date.now },
+  isDeleted: { type: Boolean, default: false },
+  deletedAt: Date,
 });
 
 PhotoSchema.index({ user: 1, visibility: 1, createdAt: -1 });
