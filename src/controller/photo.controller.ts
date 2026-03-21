@@ -3,6 +3,7 @@ import {
   deletePhotoService,
   getAllPhotosService,
   getSinglePhotoService,
+  restorePhotoService,
   softDeletePhotoService,
   updatePhotoService,
   uploadPhotoService,
@@ -130,7 +131,11 @@ export const deletePhoto = async (
       throw createError("Please provide photoId", 400);
     }
     const userId = req.params.userId || req.currentUser._id.toString();
-    const photo = await deletePhotoService(photoId, userId, req.currentUser.role);
+    const photo = await deletePhotoService(
+      photoId,
+      userId,
+      req.currentUser.role,
+    );
 
     res.status(200).json({
       status: "success",
@@ -159,6 +164,31 @@ export const softDeletePhoto = async (
 
     res.status(200).json({
       status: "success",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const restorePhoto = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { photoId } = req.params;
+    if (!photoId) {
+      throw createError("Please provide photoId", 400);
+    }
+
+    const photo = await restorePhotoService(
+      photoId,
+      req.currentUser._id.toString(),
+    );
+
+    res.status(200).json({
+      status: "success",
+      photo,
     });
   } catch (error) {
     next(error);

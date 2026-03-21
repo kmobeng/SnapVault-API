@@ -3,6 +3,7 @@ import {
   deletePhoto,
   getAllPhotos,
   getSinglePhoto,
+  restorePhoto,
   softDeletePhoto,
   updatePhoto,
   uploadPhoto,
@@ -34,6 +35,8 @@ router
   .get(getSinglePhoto)
   .patch(updatePhoto)
   .delete(softDeletePhoto);
+
+router.route("/photo/:photoId/restore").patch(restorePhoto);
 
 router
   .route("/photo/:photoId/permanent")

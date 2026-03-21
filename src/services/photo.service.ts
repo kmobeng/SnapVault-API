@@ -270,3 +270,29 @@ export const softDeletePhotoService = async (photoId: any, userId: string) => {
     throw error;
   }
 };
+
+export const restorePhotoService = async (photoId: any, userId: string) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(photoId)) {
+      throw createError("Invalid photo ID", 400);
+    }
+
+    const photo: any = await Photo.findOneAndUpdate(
+      { _id: photoId, user: userId, isDeleted: true },
+      { $set: { isDeleted: false, deletedAt: null } },
+      { new: true },
+    );
+
+    const photosKey = await RedisClient.keys(`photos:${userId}:*`);
+
+    if (photosKey.length !== 0) {
+      await RedisClient.del(...photosKey);
+    }
+    await RedisClient.del(`photo:${photoId}:owner`);
+    await RedisClient.del(`photo:${photoId}:public`);
+
+    return photo;
+  } catch (error) {
+    throw error;
+  }
+};
