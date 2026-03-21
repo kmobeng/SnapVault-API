@@ -40,6 +40,10 @@ export const protect = async (
       throw createError("The user with this token does not exist", 404);
     }
 
+    if(!currentUser.refreshToken && !currentUser.refreshTokenExpires) {
+      throw createError("Session expired. Please login again", 401);
+    }
+
     if (currentUser.changedPasswordAfter(decoded.iat)) {
       throw createError("Password changed. Please login again", 400);
     }
