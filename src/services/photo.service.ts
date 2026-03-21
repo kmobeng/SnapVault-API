@@ -199,7 +199,7 @@ export const updatePhotoService = async (
 export const deletePhotoService = async (
   photoId: any,
   userId: string,
-  role?: string,
+  role: string,
 ) => {
   try {
     // Validate photoId and userId
@@ -211,7 +211,10 @@ export const deletePhotoService = async (
     let query: any;
 
     if (role === "admin") {
-      query = { _id: photoId, visibility: "public" };
+      query = {
+        _id: photoId,
+        $or: [{ user: userId }, { visibility: "public" }],
+      };
     } else {
       query = { _id: photoId, user: userId };
     }

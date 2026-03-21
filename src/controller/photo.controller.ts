@@ -130,7 +130,7 @@ export const deletePhoto = async (
       throw createError("Please provide photoId", 400);
     }
     const userId = req.params.userId || req.currentUser._id.toString();
-    const photo = await deletePhotoService(photoId, userId, req.params.role);
+    const photo = await deletePhotoService(photoId, userId, req.currentUser.role);
 
     res.status(200).json({
       status: "success",

@@ -9,7 +9,6 @@ import {
 } from "../controller/photo.controller";
 import multer from "multer";
 import { apiLimiter } from "../middleware/limiter.middleware";
-import { setRole } from "../middleware/setRoleAdmin.middleware";
 import {
   isEmailVerified,
   needToChangePassword,
@@ -38,7 +37,7 @@ router
 
 router
   .route("/photo/:photoId/permanent")
-  .delete(restrictTo("admin, user"), setRole, deletePhoto);
+  .delete(restrictTo("admin", "user"), deletePhoto);
 
 router.route("/:userId/photo").get(getAllPhotos);
 
