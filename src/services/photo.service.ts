@@ -296,3 +296,12 @@ export const restorePhotoService = async (photoId: any, userId: string) => {
     throw error;
   }
 };
+
+export const viewDeletedPhotosService = async (userId: string) => {
+  try {
+    const photos = await Photo.find({ user: userId, isDeleted: true });
+    return photos;
+  } catch (error) {
+    throw error;
+  }
+};

@@ -7,6 +7,7 @@ import {
   softDeletePhotoService,
   updatePhotoService,
   uploadPhotoService,
+  viewDeletedPhotosService,
 } from "../services/photo.service";
 import { createError } from "../utils/error.util";
 
@@ -164,6 +165,7 @@ export const softDeletePhoto = async (
 
     res.status(200).json({
       status: "success",
+      accessToken: res.locals.token,
     });
   } catch (error) {
     next(error);
@@ -188,7 +190,36 @@ export const restorePhoto = async (
 
     res.status(200).json({
       status: "success",
-      photo,
+      accessToken: res.locals.token,
+      data: photo,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const viewdeletedPhotos = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.currentUser._id.toString();
+    const photos = await viewDeletedPhotosService(userId);
+
+    if (photos.length === 0) {
+      return res
+        .status(200)
+        .json({
+          message: "No deleted photos found",
+          accessToken: res.locals.token,
+        });
+    }
+    res.status(200).json({
+      status: "success",
+      accessToken: res.locals.token,
+      result: photos.length,
+      data: { photos },
     });
   } catch (error) {
     next(error);

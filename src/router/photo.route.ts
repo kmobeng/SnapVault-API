@@ -7,6 +7,7 @@ import {
   softDeletePhoto,
   updatePhoto,
   uploadPhoto,
+  viewdeletedPhotos,
 } from "../controller/photo.controller";
 import multer from "multer";
 import { apiLimiter } from "../middleware/limiter.middleware";
@@ -30,17 +31,19 @@ router
   .post(upload.single("photo"), uploadPhoto)
   .get(getAllPhotos);
 
-router
-  .route("/photo/:photoId")
-  .get(getSinglePhoto)
-  .patch(updatePhoto)
-  .delete(softDeletePhoto);
+router.route("/photo/trash").get(viewdeletedPhotos);
 
 router.route("/photo/:photoId/restore").patch(restorePhoto);
 
 router
   .route("/photo/:photoId/permanent")
   .delete(restrictTo("admin", "user"), deletePhoto);
+
+router
+  .route("/photo/:photoId")
+  .get(getSinglePhoto)
+  .patch(updatePhoto)
+  .delete(softDeletePhoto);
 
 router.route("/:userId/photo").get(getAllPhotos);
 
