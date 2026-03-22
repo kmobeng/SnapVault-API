@@ -1,4 +1,5 @@
 import { InferSchemaType, model, Schema } from "mongoose";
+import Photo from "./photo.model";
 
 const AlbumSchema = new Schema({
   name: {
@@ -7,6 +8,7 @@ const AlbumSchema = new Schema({
     trim: true,
     unique: true,
   },
+  photos: [{ type: Schema.Types.ObjectId, ref: "Photo" }],
   user: { type: Schema.Types.ObjectId, ref: "User", required: true },
   createdAt: { type: Date, default: Date.now },
 });

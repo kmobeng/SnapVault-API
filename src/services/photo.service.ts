@@ -12,17 +12,9 @@ export const uploadPhotoService = async (
   visibility: string,
   userId: string,
   photo: any,
-  albumId?: any,
 ) => {
   let publicId;
   try {
-    if (
-      (albumId && !mongoose.Types.ObjectId.isValid(albumId)) ||
-      !mongoose.Types.ObjectId.isValid(userId)
-    ) {
-      throw createError("Invalid user id or album id", 400);
-    }
-
     if (!photo || !photo.buffer) {
       throw createError("No photo file provided", 400);
     }
@@ -55,7 +47,6 @@ export const uploadPhotoService = async (
       url,
       publicId,
       user: userId,
-      album: albumId,
     });
 
     const keys = await RedisClient.keys(`photos:${userId}:*`);

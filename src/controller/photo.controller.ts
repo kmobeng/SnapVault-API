@@ -17,7 +17,7 @@ export const uploadPhoto = async (
   next: NextFunction,
 ) => {
   try {
-    const { title, description, visibility, albumId } = req.body;
+    const { title, description, visibility } = req.body;
 
     const userId = req.currentUser._id.toString();
     const photo = req.file;
@@ -28,7 +28,6 @@ export const uploadPhoto = async (
       visibility,
       userId,
       photo,
-      albumId?.toString(),
     );
 
     res.status(201).json({
@@ -208,12 +207,10 @@ export const viewdeletedPhotos = async (
     const photos = await viewDeletedPhotosService(userId);
 
     if (photos.length === 0) {
-      return res
-        .status(200)
-        .json({
-          message: "No deleted photos found",
-          accessToken: res.locals.token,
-        });
+      return res.status(200).json({
+        message: "No deleted photos found",
+        accessToken: res.locals.token,
+      });
     }
     res.status(200).json({
       status: "success",
