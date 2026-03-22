@@ -133,12 +133,12 @@ export const addPhotoToAlbum = async (
       throw createError("Invalid album ID", 400);
     }
     const userId = req.currentUser._id.toString();
-    const { photoId } = req.body;
-    if (!photoId) {
+    const { photoIds } = req.body;
+    if (!photoIds) {
       throw createError("No photo ID provided", 400);
     }
 
-    const album = await addPhotosToAlbumService(albumId, userId, photoId);
+    const album = await addPhotosToAlbumService(albumId, userId, photoIds);
     res
       .status(200)
       .json({ status: "success", accessToken: res.locals.token, data: album });

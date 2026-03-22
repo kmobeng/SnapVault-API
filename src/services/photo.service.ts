@@ -1,4 +1,5 @@
 import mongoose, { Types } from "mongoose";
+import sharp from "sharp";
 import Photo from "../model/photo.model";
 import { createError } from "../utils/error.util";
 import { cloudinary, RedisClient } from "../config/db.config";
@@ -19,6 +20,13 @@ export const uploadPhotoService = async (
       throw createError("No photo file provided", 400);
     }
 
+    // Compress and normalize before upload to reduce payload size.
+    const compressedBuffer = await sharp(photo.buffer)
+      .rotate()
+      .resize({ width: 1920, withoutEnlargement: true })
+      .jpeg({ quality: 80 })
+      .toBuffer();
+
     const uploadResult = await new Promise<any>((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         {
@@ -34,7 +42,7 @@ export const uploadPhotoService = async (
         },
       );
 
-      stream.end(photo.buffer);
+      stream.end(compressedBuffer);
     });
 
     const url = uploadResult.secure_url;

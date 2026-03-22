@@ -9,7 +9,6 @@ import {
   uploadPhoto,
   viewdeletedPhotos,
 } from "../controller/photo.controller";
-import multer from "multer";
 import { apiLimiter } from "../middleware/limiter.middleware";
 import {
   isEmailVerified,
@@ -17,8 +16,9 @@ import {
   protect,
   restrictTo,
 } from "../middleware/auth.middleware";
+import upload from "../middleware/multer.middleware";
 
-const upload = multer({ storage: multer.memoryStorage() });
+
 
 const router = Router();
 router.use(protect);

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  addPhotoToAlbum,
   createAlbum,
   deleteSingleAlbum,
   getAllAlbums,
@@ -27,8 +28,12 @@ router
   .patch(updateSingleAlbum)
   .delete(deleteSingleAlbum);
 
+  router.route("/album/:albumId/addPhotos").patch(addPhotoToAlbum);
+
 router.route("/:userId/album").get(getAllAlbums);
 
 router.route("/:userId/album/:albumId").get(getSingleAlbum);
+
+
 
 export default router;

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import logger from "../config/wiston.config";
+import multer from "multer";
 
 const sendErrorDev = (err: any, res: Response) => {
   res.status(err.statusCode).json({
@@ -72,6 +73,18 @@ export const errorHandler = (
     statusCode = 401;
     isOperational = true;
     errorMessage = "Token expired. Please login again.";
+  }
+
+  if (err.code === "LIMIT_FILE_SIZE") {
+    statusCode = 400;
+    isOperational = true;
+    errorMessage = "File too large. Max 10MB";
+  }
+
+  if (err.code === "LIMIT_FILE_COUNT") {
+    statusCode = 400;
+    isOperational = true;
+    errorMessage = "Too many files. Max 10";
   }
 
   err.statusCode = statusCode;
