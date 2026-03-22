@@ -7,6 +7,32 @@ import APIFeatures from "../utils/APIFeatures.util";
 import User from "../model/user.model";
 import logger from "../config/wiston.config";
 
+const uploadCompressedPhotoToCloudinary = async (buffer: Buffer) => {
+  const compressedBuffer = await sharp(buffer)
+    .rotate()
+    .resize({ width: 1920, withoutEnlargement: true })
+    .jpeg({ quality: 80 })
+    .toBuffer();
+
+  return new Promise<any>((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: "photo-vault",
+        resource_type: "image",
+      },
+      (error, result) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(result);
+        }
+      },
+    );
+
+    stream.end(compressedBuffer);
+  });
+};
+
 export const uploadPhotoService = async (
   title: string,
   description: string,
@@ -20,30 +46,7 @@ export const uploadPhotoService = async (
       throw createError("No photo file provided", 400);
     }
 
-    // Compress and normalize before upload to reduce payload size.
-    const compressedBuffer = await sharp(photo.buffer)
-      .rotate()
-      .resize({ width: 1920, withoutEnlargement: true })
-      .jpeg({ quality: 80 })
-      .toBuffer();
-
-    const uploadResult = await new Promise<any>((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        {
-          folder: "photo-vault",
-          resource_type: "image",
-        },
-        (error, result) => {
-          if (error) {
-            reject(error);
-          } else {
-            resolve(result);
-          }
-        },
-      );
-
-      stream.end(compressedBuffer);
-    });
+    const uploadResult = await uploadCompressedPhotoToCloudinary(photo.buffer);
 
     const url = uploadResult.secure_url;
     publicId = uploadResult.public_id;
@@ -74,6 +77,57 @@ export const uploadPhotoService = async (
       } catch (deleteError) {
         logger.error("Failed to cleanup Cloudinary:", deleteError);
       }
+    }
+    throw error;
+  }
+};
+
+export const uploadMultiplePhotosService = async (
+  title: string,
+  description: string,
+  visibility: string,
+  userId: string,
+  photos: any[],
+) => {
+  const uploadedPublicIds: string[] = [];
+  try {
+    if (!Array.isArray(photos) || photos.length === 0) {
+      throw createError("No photo files provided", 400);
+    }
+
+    const uploadedPhotos = await Promise.all(
+      photos.map(async (photo) => {
+        if (!photo || !photo.buffer) {
+          throw createError("Invalid photo file provided", 400);
+        }
+
+        const uploadResult = await uploadCompressedPhotoToCloudinary(photo.buffer);
+        uploadedPublicIds.push(uploadResult.public_id);
+
+        return {
+          title,
+          description,
+          visibility,
+          url: uploadResult.secure_url,
+          publicId: uploadResult.public_id,
+          user: userId,
+        };
+      }),
+    );
+
+    const createdPhotos = await Photo.insertMany(uploadedPhotos);
+
+    const keys = await RedisClient.keys(`photos:${userId}:*`);
+    if (keys.length > 0) {
+      await RedisClient.del(...keys);
+    }
+
+    return createdPhotos;
+  } catch (error) {
+    if (uploadedPublicIds.length > 0) {
+      await Promise.allSettled(
+        uploadedPublicIds.map((publicId) => cloudinary.uploader.destroy(publicId)),
+      );
     }
     throw error;
   }

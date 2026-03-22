@@ -5,6 +5,7 @@ import {
   getSinglePhotoService,
   restorePhotoService,
   softDeletePhotoService,
+  uploadMultiplePhotosService,
   updatePhotoService,
   uploadPhotoService,
   viewDeletedPhotosService,
@@ -20,15 +21,27 @@ export const uploadPhoto = async (
     const { title, description, visibility } = req.body;
 
     const userId = req.currentUser._id.toString();
+    const files = req.files as Express.Multer.File[];
     const photo = req.file;
 
-    const photoResult = await uploadPhotoService(
-      title,
-      description,
-      visibility,
-      userId,
-      photo,
-    );
+    let photoResult;
+    if (files && files.length > 0) {
+      photoResult = await uploadMultiplePhotosService(
+        title,
+        description,
+        visibility,
+        userId,
+        files,
+      );
+    } else {
+      photoResult = await uploadPhotoService(
+        title,
+        description,
+        visibility,
+        userId,
+        photo,
+      );
+    }
 
     res.status(201).json({
       status: "success",

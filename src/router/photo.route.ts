@@ -18,8 +18,6 @@ import {
 } from "../middleware/auth.middleware";
 import upload from "../middleware/multer.middleware";
 
-
-
 const router = Router();
 router.use(protect);
 router.use(isEmailVerified);
@@ -28,7 +26,7 @@ router.use(apiLimiter);
 
 router
   .route("/photo")
-  .post(upload.single("photo"), uploadPhoto)
+  .post(upload.array("photo", 10), uploadPhoto)
   .get(getAllPhotos);
 
 router.route("/photo/trash").get(viewdeletedPhotos);
