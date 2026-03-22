@@ -11,7 +11,6 @@ const PhotoSchema = new Schema({
     ref: "User",
     required: [true, "user field is required"],
   },
-  album: { type: Schema.Types.ObjectId, ref: "Album" },
   createdAt: { type: Date, default: Date.now },
   isDeleted: { type: Boolean, default: false },
   deletedAt: Date,
