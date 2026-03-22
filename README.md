@@ -9,10 +9,13 @@ A secure RESTful API for storing and managing photos and albums. Built with Node
 - Email verification flow with OTP token and resend endpoint
 - Forgot/reset password flow via email
 - Automatic access-token refresh via middleware when access token expires
-- Photo upload and storage via Cloudinary
+- Single and multi-photo upload (up to 10 files/request) via Cloudinary
+- Server-side image compression with Sharp before Cloudinary upload
+- Soft delete, trash listing, restore, and permanent delete for photos
 - Album management with user ownership checks
+- Add multiple photos to albums with ownership validation and duplicate-safe inserts
 - Role-based authorization for admin actions
-- Redis cache invalidation for user-list updates
+- Redis caching for list/detail reads with cache invalidation on writes
 - Security middleware: Helmet, CORS, and route-level rate limiting
 - Structured request logging with Morgan + Winston
 
@@ -186,14 +189,16 @@ Supported query options for `GET /api/user`:
 
 Global middleware: protect, isEmailVerified, needToChangePassword, apiLimiter
 
-- POST /photo (multipart/form-data, field: photo)
+- POST /photo (multipart/form-data, repeated field: photo, max 10 files)
 - GET /photo
+- GET /photo/trash
+- PATCH /photo/:photoId/restore
+- DELETE /photo/:photoId/permanent (admin + user)
 - GET /photo/:photoId
 - PATCH /photo/:photoId
-- DELETE /photo/:photoId
+- DELETE /photo/:photoId (soft delete)
 - GET /:userId/photo
 - GET /:userId/photo/:photoId
-- Admin only: DELETE /:userId/photo/:photoId
 
 Listing endpoints support `page`, `limit`, `sort`, and `fields` query options.
 
@@ -202,12 +207,16 @@ Upload photo payload:
 ```text
 Content-Type: multipart/form-data
 
-photo: file (required)
+photo: file (required, can be sent multiple times)
 title: string
 description: string
 visibility: public | private
-albumId: optional
 ```
+
+Notes:
+
+- Files are compressed server-side before upload (resize cap: 1920px width, JPEG quality 80).
+- Multi-upload uses concurrent Cloudinary uploads and bulk DB insertion.
 
 ### Album Routes (/api)
 
@@ -218,10 +227,24 @@ Global middleware: protect, isEmailVerified, needToChangePassword, apiLimiter
 - GET /album/:albumId
 - PATCH /album/:albumId
 - DELETE /album/:albumId
+- PATCH /album/:albumId/addPhotos
 - GET /:userId/album
 - GET /:userId/album/:albumId
 
 Listing endpoints support `page`, `limit`, `sort`, and `fields` query options.
+
+Add photos payload for `PATCH /album/:albumId/addPhotos`:
+
+```json
+{
+  "photoIds": ["photoId1", "photoId2"]
+}
+```
+
+Notes:
+
+- Photo IDs are validated and must belong to the same user.
+- Existing photos in the album are ignored via duplicate-safe insertion.
 
 ## Project Structure
 
