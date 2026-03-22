@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import {
+  addPhotosToAlbumService,
   createAlbumService,
   deleteSingleAlbumService,
   getAllAlbumsService,
@@ -119,3 +120,30 @@ export const deleteSingleAlbum = async (
     next(error);
   }
 };
+
+export const addPhotoToAlbum = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { albumId } = req.params;
+
+    if (!albumId) {
+      throw createError("Invalid album ID", 400);
+    }
+    const userId = req.currentUser._id.toString();
+    const { photoId } = req.body;
+    if (!photoId) {
+      throw createError("No photo ID provided", 400);
+    }
+
+    const album = await addPhotosToAlbumService(albumId, userId, photoId);
+    res
+      .status(200)
+      .json({ status: "success", accessToken: res.locals.token, data: album });
+
+  }catch (error) {
+    next(error);
+  }
+}  
