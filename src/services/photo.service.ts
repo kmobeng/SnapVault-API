@@ -101,7 +101,9 @@ export const uploadMultiplePhotosService = async (
           throw createError("Invalid photo file provided", 400);
         }
 
-        const uploadResult = await uploadCompressedPhotoToCloudinary(photo.buffer);
+        const uploadResult = await uploadCompressedPhotoToCloudinary(
+          photo.buffer,
+        );
         uploadedPublicIds.push(uploadResult.public_id);
 
         return {
@@ -126,7 +128,9 @@ export const uploadMultiplePhotosService = async (
   } catch (error) {
     if (uploadedPublicIds.length > 0) {
       await Promise.allSettled(
-        uploadedPublicIds.map((publicId) => cloudinary.uploader.destroy(publicId)),
+        uploadedPublicIds.map((publicId) =>
+          cloudinary.uploader.destroy(publicId),
+        ),
       );
     }
     throw error;
@@ -317,6 +321,7 @@ export const softDeletePhotoService = async (photoId: any, userId: string) => {
     }
     await RedisClient.del(`photo:${userId}:${photoId}:owner`);
     await RedisClient.del(`photo:${userId}:${photoId}:public`);
+    await RedisClient.del(`albums:${userId}:*`);
 
     return photo;
   } catch (error) {

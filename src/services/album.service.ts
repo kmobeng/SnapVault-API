@@ -5,7 +5,11 @@ import { createError } from "../utils/error.util";
 import APIFeatures from "../utils/APIFeatures.util";
 import mongoose from "mongoose";
 
-export const createAlbumService = async (name: string, userId: any) => {
+export const createAlbumService = async (
+  name: string,
+  visibility: string,
+  userId: string,
+) => {
   try {
     const album = await Album.create({ name, user: userId });
     if (!album) {
@@ -21,7 +25,11 @@ export const createAlbumService = async (name: string, userId: any) => {
   }
 };
 
-export const getAllAlbumsService = async (userId: any, queryString: any) => {
+export const getAllAlbumsService = async (
+  userId: string,
+  user: string,
+  queryString: any,
+) => {
   const albumsKey = `albums:${userId}:${JSON.stringify(queryString)}`;
   try {
     const cachedAlbums = await RedisClient.get(albumsKey);
@@ -30,7 +38,15 @@ export const getAllAlbumsService = async (userId: any, queryString: any) => {
       return JSON.parse(cachedAlbums);
     }
 
-    const features = new APIFeatures(Album.find({ user: userId }), queryString)
+    let query: any;
+
+    if (user === userId) {
+      query = { user: userId };
+    } else {
+      query = { user: userId, visibility: "public" };
+    }
+
+    const features = new APIFeatures(Album.find(query), queryString)
       .filter()
       .sort()
       .limitFields()
@@ -48,20 +64,33 @@ export const getAllAlbumsService = async (userId: any, queryString: any) => {
 export const getSingleAlbumService = async (
   albumId: string,
   userId: string,
+  user: string,
 ) => {
   const albumKey = `album:${albumId}`;
   try {
+    // Check Redis cache first
     const cachedAlbum = await RedisClient.get(albumKey);
 
     if (cachedAlbum) {
       return JSON.parse(cachedAlbum);
     }
 
+    // If not in cache, fetch from database
     if (!mongoose.Types.ObjectId.isValid(albumId)) {
       throw createError("Invalid album ID", 400);
     }
 
-    const album = await Album.findOne({ _id: albumId, user: userId });
+    let query: any;
+    if (user === userId) {
+      query = { isDeleted: false };
+    } else {
+      query = { isDeleted: false, visibility: "public" };
+    }
+
+    const album = await Album.findOne({ _id: albumId, user: userId }).populate({
+      path: "photos",
+      match: query,
+    });
 
     if (!album) {
       throw createError("No album found", 404);

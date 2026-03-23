@@ -10,6 +10,11 @@ const AlbumSchema = new Schema({
   },
   photos: [{ type: Schema.Types.ObjectId, ref: "Photo" }],
   user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  visibility: {
+    type: String,
+    enum: ["public", "private"],
+    default: "private",
+  },
   createdAt: { type: Date, default: Date.now },
 });
 

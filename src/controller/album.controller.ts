@@ -17,11 +17,16 @@ export const createAlbum = async (
   try {
     const userId = req.currentUser._id;
 
-    const { name } = req.body;
+    const { name, visibility } = req.body;
     if (!name) {
       return createError("Please provide name of album", 400);
     }
-    const album = await createAlbumService(name, userId);
+
+    if (!visibility) {
+      return createError("Please provide visibility of album", 400);
+    }
+
+    const album = await createAlbumService(name,visibility, userId.toString());
     res
       .status(201)
       .json({ status: "success", accessToken: res.locals.token, data: album });
@@ -37,7 +42,7 @@ export const getAllAlbums = async (
 ) => {
   try {
     const userId = req.params.userId || req.currentUser._id;
-    const albums = await getAllAlbumsService(userId, req.query);
+    const albums = await getAllAlbumsService(userId.toString(),req.currentUser._id.toString(), req.query);
     if (albums.length < 1) {
       return res.status(404).json({ message: "No albums found", accessToken: res.locals.token });
     }
@@ -64,7 +69,7 @@ export const getSingleAlbum = async (
       throw createError("No album id provided", 400);
     }
     const userId = req.params.userId || req.currentUser._id.toString();
-    const album = await getSingleAlbumService(albumId, userId);
+    const album = await getSingleAlbumService(albumId, userId, req.currentUser._id.toString());
 
     res.status(200).json({
       status: "success",
