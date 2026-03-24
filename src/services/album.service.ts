@@ -6,13 +6,29 @@ import mongoose from "mongoose";
 import PhotoAlbum from "../model/photoAlbum.model";
 
 const getAlbumsCacheIndexKey = (userId: string) => `albums:index:${userId}`;
+const getAlbumCacheIndexKey = (albumId: string) => `album:index:${albumId}`;
 
 const trackAlbumsCacheKey = async (userId: string, cacheKey: string) => {
   await RedisClient.sadd(getAlbumsCacheIndexKey(userId), cacheKey);
 };
 
+const trackAlbumCacheKey = async (albumId: string, cacheKey: string) => {
+  await RedisClient.sadd(getAlbumCacheIndexKey(albumId), cacheKey);
+};
+
 const invalidateAlbumsCache = async (userId: string) => {
   const indexKey = getAlbumsCacheIndexKey(userId);
+  const cachedKeys = await RedisClient.smembers(indexKey);
+
+  if (cachedKeys.length !== 0) {
+    await RedisClient.del(...cachedKeys);
+  }
+
+  await RedisClient.del(indexKey);
+};
+
+const invalidateAlbumCache = async (albumId: string) => {
+  const indexKey = getAlbumCacheIndexKey(albumId);
   const cachedKeys = await RedisClient.smembers(indexKey);
 
   if (cachedKeys.length !== 0) {
@@ -81,7 +97,7 @@ export const getSingleAlbumService = async (
   userId: string,
   user: string,
 ) => {
-  const albumKey = `album:${albumId}`;
+  const albumKey = `album:${albumId}:${user}`;
   try {
     // Check Redis cache first
     const cachedAlbum = await RedisClient.get(albumKey);
@@ -95,20 +111,32 @@ export const getSingleAlbumService = async (
       throw createError("Invalid album ID", 400);
     }
 
-    let query: any;
-    if (user === userId) {
-      query = { isDeleted: false };
-    } else {
-      query = { isDeleted: false, visibility: "public" };
+    const query: { _id: string; user: string; visibility?: "public" } = {
+      _id: albumId,
+      user: userId,
+    };
+
+    if (user !== userId) {
+      query.visibility = "public";
     }
 
-    const album = await Album.findOne({ _id: albumId, user: userId });
+    const album = await Album.findOne(query)
+      .populate({
+        path: "photos",
+        match: { user: userId },
+        populate: {
+          path: "photo",
+          match: { isDeleted: false },
+        },
+      })
+      .lean();
 
     if (!album) {
       throw createError("No album found", 404);
     }
 
-    RedisClient.setex(albumKey, 3600, JSON.stringify(album));
+    await RedisClient.setex(albumKey, 3600, JSON.stringify(album));
+    await trackAlbumCacheKey(albumId, albumKey);
 
     return album;
   } catch (error) {
@@ -135,7 +163,7 @@ export const updateSingleAlbumService = async (
       throw createError("Error while updating album", 400);
     }
     await invalidateAlbumsCache(userId);
-    await RedisClient.del(`album:${albumId}`);
+    await invalidateAlbumCache(albumId);
 
     return album;
   } catch (error) {
@@ -165,7 +193,7 @@ export const deleteSingleAlbumService = async (
 
     await invalidateAlbumsCache(userId);
 
-    await RedisClient.del(`album:${albumId}`);
+  await invalidateAlbumCache(albumId);
 
     return album;
   } catch (error) {
@@ -275,7 +303,7 @@ export const addPhotosToAlbumService = async (
     );
 
     await invalidateAlbumsCache(userId);
-    await RedisClient.del(`album:${albumId}`);
+    await invalidateAlbumCache(albumId);
 
     return {
       album: {
