@@ -5,6 +5,7 @@ import {
   deleteSingleAlbum,
   getAllAlbums,
   getSingleAlbum,
+  removePhotosFromAlbum,
   updateSingleAlbum,
 } from "../controller/album.controller";
 import { apiLimiter } from "../middleware/limiter.middleware";
@@ -28,12 +29,11 @@ router
   .patch(updateSingleAlbum)
   .delete(deleteSingleAlbum);
 
-  router.route("/album/:albumId/addPhotos").patch(addPhotoToAlbum);
+router.route("/album/:albumId/addPhotos").patch(addPhotoToAlbum);
+router.route("/album/:albumId/removePhotos").delete(removePhotosFromAlbum);
 
 router.route("/:userId/album").get(getAllAlbums);
 
 router.route("/:userId/album/:albumId").get(getSingleAlbum);
-
-
 
 export default router;

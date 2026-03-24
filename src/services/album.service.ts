@@ -4,6 +4,7 @@ import { createError } from "../utils/error.util";
 import APIFeatures from "../utils/APIFeatures.util";
 import mongoose from "mongoose";
 import PhotoAlbum from "../model/photoAlbum.model";
+import Photo from "../model/photo.model";
 
 const getAlbumsCacheIndexKey = (userId: string) => `albums:index:${userId}`;
 const getAlbumCacheIndexKey = (albumId: string) => `album:index:${albumId}`;
@@ -107,8 +108,16 @@ export const getSingleAlbumService = async (
   albumId: string,
   userId: string,
   user: string,
+  queryString: any = {},
 ) => {
-  const albumKey = `album:${albumId}:${user}`;
+  const normalizedQuery = Object.keys(queryString)
+    .sort()
+    .reduce((acc: any, key) => {
+      acc[key] = queryString[key];
+      return acc;
+    }, {});
+
+  const albumKey = `album:${albumId}:${user}:${JSON.stringify(normalizedQuery)}`;
   try {
     // Check Redis cache first
     const cachedAlbum = await RedisClient.get(albumKey);
@@ -132,27 +141,38 @@ export const getSingleAlbumService = async (
       query.visibility = "public";
     }
 
-    const photoVisibilityMatch = isOwner ? {} : { visibility: "public" };
-
-    const album = await Album.findOne(query)
-      .populate({
-        path: "photos",
-        match: { user: userId },
-        populate: {
-          path: "photo",
-          match: { isDeleted: false, ...photoVisibilityMatch },
-        },
-      })
-      .lean();
+    const album = await Album.findOne(query).lean();
 
     if (!album) {
       throw createError("No album found", 404);
     }
 
-    // Remove relation rows whose nested photo failed the match filter.
-    const photos = Array.isArray((album as any).photos)
-      ? (album as any).photos.filter((row: any) => row?.photo)
-      : [];
+    const photoLinks = await PhotoAlbum.find({ album: albumId, user: userId })
+      .select("photo")
+      .lean();
+
+    const photoIds = photoLinks.map((row: any) => row.photo);
+
+    let photos: any[] = [];
+    if (photoIds.length > 0) {
+      const photoFilter: any = {
+        _id: { $in: photoIds },
+        user: userId,
+        isDeleted: false,
+      };
+
+      if (!isOwner) {
+        photoFilter.visibility = "public";
+      }
+
+      const photoFeatures = new APIFeatures(Photo.find(photoFilter), queryString)
+        .filter()
+        .sort()
+        .limitFields()
+        .paginate();
+
+      photos = await photoFeatures.query.lean();
+    }
 
     const hydratedAlbum = {
       ...(album as any),
@@ -163,6 +183,54 @@ export const getSingleAlbumService = async (
     await trackAlbumCacheKey(albumId, albumKey);
 
     return hydratedAlbum;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const removePhotosFromAlbumService = async (
+  albumId: string,
+  userId: string,
+  photoIds: string[],
+) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(albumId)) {
+      throw createError("Invalid album ID", 400);
+    }
+
+    if (!Array.isArray(photoIds) || photoIds.length === 0) {
+      throw createError("Please provide at least one photo ID", 400);
+    }
+
+    for (const id of photoIds) {
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw createError("Invalid photo ID", 400);
+      }
+    }
+
+    const albumExists = await Album.exists({ _id: albumId, user: userId });
+
+    if (!albumExists) {
+      throw createError("Album not found", 404);
+    }
+
+    const uniquePhotoIds = [...new Set(photoIds)];
+
+    const deleteResult = await PhotoAlbum.deleteMany({
+      album: albumId,
+      user: userId,
+      photo: { $in: uniquePhotoIds },
+    });
+
+    await invalidateAlbumsCache(userId);
+    await invalidateAlbumCache(albumId);
+
+    return {
+      albumId,
+      totalRequested: uniquePhotoIds.length,
+      removed: deleteResult.deletedCount || 0,
+      notFound: uniquePhotoIds.length - (deleteResult.deletedCount || 0),
+    };
   } catch (error) {
     throw error;
   }

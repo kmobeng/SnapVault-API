@@ -4,6 +4,7 @@ import {
   createAlbumService,
   deleteSingleAlbumService,
   getAllAlbumsService,
+  removePhotosFromAlbumService,
   getSingleAlbumService,
   updateSingleAlbumService,
 } from "../services/album.service";
@@ -26,7 +27,7 @@ export const createAlbum = async (
       throw createError("Please provide visibility of album", 400);
     }
 
-    const album = await createAlbumService(name,visibility, userId.toString());
+    const album = await createAlbumService(name, visibility, userId.toString());
     res
       .status(201)
       .json({ status: "success", accessToken: res.locals.token, data: album });
@@ -42,9 +43,15 @@ export const getAllAlbums = async (
 ) => {
   try {
     const userId = req.params.userId || req.currentUser._id;
-    const albums = await getAllAlbumsService(userId.toString(),req.currentUser._id.toString(), req.query);
+    const albums = await getAllAlbumsService(
+      userId.toString(),
+      req.currentUser._id.toString(),
+      req.query,
+    );
     if (albums.length < 1) {
-      return res.status(404).json({ message: "No albums found", accessToken: res.locals.token });
+      return res
+        .status(404)
+        .json({ message: "No albums found", accessToken: res.locals.token });
     }
 
     res.status(200).json({
@@ -69,7 +76,12 @@ export const getSingleAlbum = async (
       throw createError("No album id provided", 400);
     }
     const userId = req.params.userId || req.currentUser._id.toString();
-    const album = await getSingleAlbumService(albumId, userId, req.currentUser._id.toString());
+    const album = await getSingleAlbumService(
+      albumId,
+      userId,
+      req.currentUser._id.toString(),
+      req.query,
+    );
 
     res.status(200).json({
       status: "success",
@@ -115,12 +127,10 @@ export const deleteSingleAlbum = async (
     }
     const userId = req.params.userId || req.currentUser._id.toString();
     await deleteSingleAlbumService(albumId, userId);
-    res
-      .status(200)
-      .json({
-        status: "success",
-        accessToken: res.locals.token,
-      });
+    res.status(200).json({
+      status: "success",
+      accessToken: res.locals.token,
+    });
   } catch (error) {
     next(error);
   }
@@ -147,8 +157,42 @@ export const addPhotoToAlbum = async (
     res
       .status(200)
       .json({ status: "success", accessToken: res.locals.token, data: album });
-
-  }catch (error) {
+  } catch (error) {
     next(error);
   }
-}  
+};
+
+export const removePhotosFromAlbum = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { albumId } = req.params;
+
+    if (!albumId) {
+      throw createError("Invalid album ID", 400);
+    }
+
+    const userId = req.currentUser._id.toString();
+    const { photoIds } = req.body;
+
+    if (!photoIds) {
+      throw createError("No photo IDs provided", 400);
+    }
+
+    const result = await removePhotosFromAlbumService(
+      albumId,
+      userId,
+      photoIds,
+    );
+
+    res.status(200).json({
+      status: "success",
+      accessToken: res.locals.token,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
