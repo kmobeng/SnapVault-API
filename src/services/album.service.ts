@@ -1,9 +1,26 @@
 import { RedisClient } from "../config/db.config";
 import Album from "../model/album.model";
-import Photo from "../model/photo.model";
 import { createError } from "../utils/error.util";
 import APIFeatures from "../utils/APIFeatures.util";
 import mongoose from "mongoose";
+import PhotoAlbum from "../model/photoAlbum.model";
+
+const getAlbumsCacheIndexKey = (userId: string) => `albums:index:${userId}`;
+
+const trackAlbumsCacheKey = async (userId: string, cacheKey: string) => {
+  await RedisClient.sadd(getAlbumsCacheIndexKey(userId), cacheKey);
+};
+
+const invalidateAlbumsCache = async (userId: string) => {
+  const indexKey = getAlbumsCacheIndexKey(userId);
+  const cachedKeys = await RedisClient.smembers(indexKey);
+
+  if (cachedKeys.length !== 0) {
+    await RedisClient.del(...cachedKeys);
+  }
+
+  await RedisClient.del(indexKey);
+};
 
 export const createAlbumService = async (
   name: string,
@@ -11,14 +28,11 @@ export const createAlbumService = async (
   userId: string,
 ) => {
   try {
-    const album = await Album.create({ name, user: userId });
+    const album = await Album.create({ name, visibility, user: userId });
     if (!album) {
       throw createError("Unable to create album", 400);
     }
-    const albumsKeys = await RedisClient.keys(`album:${userId}:*`);
-    if (albumsKeys.length !== 0) {
-      await RedisClient.del(...albumsKeys);
-    }
+    await invalidateAlbumsCache(userId);
     return album;
   } catch (error) {
     throw error;
@@ -54,6 +68,7 @@ export const getAllAlbumsService = async (
     const albums = await features.query.lean();
 
     await RedisClient.setex(albumsKey, 3600, JSON.stringify(albums));
+    await trackAlbumsCacheKey(userId, albumsKey);
 
     return albums;
   } catch (error) {
@@ -87,10 +102,7 @@ export const getSingleAlbumService = async (
       query = { isDeleted: false, visibility: "public" };
     }
 
-    const album = await Album.findOne({ _id: albumId, user: userId }).populate({
-      path: "photos",
-      match: query,
-    });
+    const album = await Album.findOne({ _id: albumId, user: userId });
 
     if (!album) {
       throw createError("No album found", 404);
@@ -122,11 +134,7 @@ export const updateSingleAlbumService = async (
     if (!album) {
       throw createError("Error while updating album", 400);
     }
-    const albumsKeys = await RedisClient.keys(`albums:${userId}:*`);
-
-    if (albumsKeys.length !== 0) {
-      await RedisClient.del(...albumsKeys);
-    }
+    await invalidateAlbumsCache(userId);
     await RedisClient.del(`album:${albumId}`);
 
     return album;
@@ -155,11 +163,7 @@ export const deleteSingleAlbumService = async (
       throw createError("Unable to delete album", 400);
     }
 
-    const albumsKeys = await RedisClient.keys(`albums:${userId}:*`);
-
-    if (albumsKeys.length !== 0) {
-      await RedisClient.del(...albumsKeys);
-    }
+    await invalidateAlbumsCache(userId);
 
     await RedisClient.del(`album:${albumId}`);
 
@@ -190,34 +194,103 @@ export const addPhotosToAlbumService = async (
     }
 
     const uniquePhotoIds = [...new Set(photoIds)];
-
-    const ownedPhotosCount = await Photo.countDocuments({
-      _id: { $in: uniquePhotoIds },
-      user: userId,
-      isDeleted: false,
-    });
-
-    if (ownedPhotosCount !== uniquePhotoIds.length) {
-      throw createError("One or more photos do not belong to this user", 403);
-    }
-
-    const updatedAlbum = await Album.findOneAndUpdate(
-      { _id: albumId, user: userId },
-      { $addToSet: { photos: { $each: uniquePhotoIds } } },
-      { new: true },
+    const albumObjectId = new mongoose.Types.ObjectId(albumId);
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+    const uniquePhotoObjectIds = uniquePhotoIds.map(
+      (id) => new mongoose.Types.ObjectId(id),
     );
 
-    if (!updatedAlbum) {
+    const [validation] = await Album.aggregate<{
+      _id: mongoose.Types.ObjectId;
+      name: string;
+      visibility: "public" | "private";
+      user: mongoose.Types.ObjectId;
+      createdAt: Date;
+      ownedPhotosCount: number;
+    }>([
+      { $match: { _id: albumObjectId, user: userObjectId } },
+      { $limit: 1 },
+      {
+        $lookup: {
+          from: "photos",
+          let: { photoIds: uniquePhotoObjectIds, currentUserId: userObjectId },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $in: ["$_id", "$$photoIds"] },
+                    { $eq: ["$user", "$$currentUserId"] },
+                    { $eq: ["$isDeleted", false] },
+                  ],
+                },
+              },
+            },
+            { $count: "count" },
+          ],
+          as: "ownedPhotosMeta",
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          visibility: 1,
+          user: 1,
+          createdAt: 1,
+          ownedPhotosCount: {
+            $ifNull: [{ $arrayElemAt: ["$ownedPhotosMeta.count", 0] }, 0],
+          },
+        },
+      },
+    ]);
+
+    if (!validation) {
       throw createError("Album not found", 404);
     }
 
-    const albumsKeys = await RedisClient.keys(`albums:${userId}:*`);
-    if (albumsKeys.length !== 0) {
-      await RedisClient.del(...albumsKeys);
+    if (validation.ownedPhotosCount !== uniquePhotoIds.length) {
+      throw createError("One or more photos do not belong to this user", 403);
     }
+
+    const writeResult = await PhotoAlbum.bulkWrite(
+      uniquePhotoObjectIds.map((photoObjectId) => ({
+        updateOne: {
+          filter: {
+            album: albumObjectId,
+            photo: photoObjectId,
+            user: userObjectId,
+          },
+          update: {
+            $setOnInsert: {
+              album: albumObjectId,
+              photo: photoObjectId,
+              user: userObjectId,
+            },
+          },
+          upsert: true,
+        },
+      })),
+      { ordered: false },
+    );
+
+    await invalidateAlbumsCache(userId);
     await RedisClient.del(`album:${albumId}`);
 
-    return updatedAlbum;
+    return {
+      album: {
+        _id: validation._id,
+        name: validation.name,
+        visibility: validation.visibility,
+        user: validation.user,
+        createdAt: validation.createdAt,
+      },
+      stats: {
+        totalRequested: uniquePhotoIds.length,
+        inserted: writeResult.upsertedCount,
+        alreadyInAlbum: uniquePhotoIds.length - writeResult.upsertedCount,
+      },
+    };
   } catch (error) {
     throw error;
   }

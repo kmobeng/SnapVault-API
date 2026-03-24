@@ -16,6 +16,6 @@ PhotoAlbumSchema.index({ user: 1, photo: 1, createdAt: -1 });
 
 type IPhotoAlbum = InferSchemaType<typeof PhotoAlbumSchema>;
 
-const Album = model<IPhotoAlbum>("PhotoAlbum", PhotoAlbumSchema);
+const PhotoAlbum = model<IPhotoAlbum>("PhotoAlbum", PhotoAlbumSchema);
 
-export default Album
+export default PhotoAlbum

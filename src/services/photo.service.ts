@@ -4,7 +4,6 @@ import Photo from "../model/photo.model";
 import { createError } from "../utils/error.util";
 import { cloudinary, RedisClient } from "../config/db.config";
 import APIFeatures from "../utils/APIFeatures.util";
-import User from "../model/user.model";
 import logger from "../config/wiston.config";
 
 const uploadCompressedPhotoToCloudinary = async (buffer: Buffer) => {
@@ -184,6 +183,7 @@ export const getSinglePhotoService = async (
   reqUserId: string,
 ) => {
   try {
+    // Validate photoId and userId
     if (
       !mongoose.Types.ObjectId.isValid(photoId) ||
       !mongoose.Types.ObjectId.isValid(userId)
@@ -191,24 +191,30 @@ export const getSinglePhotoService = async (
       throw createError("Invalid user ID or photo ID", 400);
     }
 
+    // Check if the requested photo belongs to the user or is public
     const isOwner = userId === reqUserId;
     const photoKey = `photo:${photoId}:${isOwner ? "owner" : "public"}`;
 
+    // Check Redis cache first
     const cachedPhoto = await RedisClient.get(photoKey);
 
+    // If cached photo exists, return it
     if (cachedPhoto) {
       return JSON.parse(cachedPhoto);
     }
+
+    // If not in cache, query the database
     const query: any = { _id: photoId, user: userId, isDeleted: false };
+    // If the requester is not the owner, only allow access to public photos
     if (!isOwner) {
       query.visibility = "public";
     }
-
+    
     const photo = await Photo.findOne(query);
     if (!photo) {
       throw createError("No photo found", 404);
     }
-
+    // Cache the photo in Redis for future requests
     RedisClient.setex(photoKey, 3600, JSON.stringify(photo));
 
     return photo;
@@ -321,7 +327,6 @@ export const softDeletePhotoService = async (photoId: any, userId: string) => {
     }
     await RedisClient.del(`photo:${userId}:${photoId}:owner`);
     await RedisClient.del(`photo:${userId}:${photoId}:public`);
-    await RedisClient.del(`albums:${userId}:*`);
 
     return photo;
   } catch (error) {
