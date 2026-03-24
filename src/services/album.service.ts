@@ -64,7 +64,14 @@ export const getAllAlbumsService = async (
   user: string,
   queryString: any,
 ) => {
-  const albumsKey = `albums:${userId}:${JSON.stringify(queryString)}`;
+  const normalizedQuery = Object.keys(queryString)
+    .sort()
+    .reduce((acc: any, key) => {
+      acc[key] = queryString[key];
+      return acc;
+    }, {});
+
+  const albumsKey = `albums:${userId}:${JSON.stringify(normalizedQuery)}`;
   try {
     const cachedAlbums = await RedisClient.get(albumsKey);
 

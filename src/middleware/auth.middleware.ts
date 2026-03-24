@@ -106,10 +106,16 @@ export const needToChangePassword = async (
   res: Response,
   next: NextFunction,
 ) => {
-  if (req.currentUser.needToChangePassword) {
-    throw createError("You need to change your password to continue", 403);
+  try {
+    if (req.currentUser.needToChangePassword) {
+      return next(
+        createError("You need to change your password to continue", 403),
+      );
+    }
+    return next();
+  } catch (error) {
+    return next(error);
   }
-  next();
 };
 
 export const isEmailVerified = async (
@@ -117,11 +123,17 @@ export const isEmailVerified = async (
   res: Response,
   next: NextFunction,
 ) => {
-  if (req.currentUser.isEmailVerified === false) {
-    throw createError(
-      "Your email is not verified. Please verify your email to continue",
-      403,
-    );
+  try {
+    if (req.currentUser.isEmailVerified === false) {
+      return next(
+        createError(
+          "Your email is not verified. Please verify your email to continue",
+          403,
+        ),
+      );
+    }
+    return next();
+  } catch (error) {
+    return next(error);
   }
-  next();
 };

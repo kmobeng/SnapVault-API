@@ -114,7 +114,7 @@ export const deleteSingleAlbum = async (
       throw createError("Invalid album ID", 400);
     }
     const userId = req.params.userId || req.currentUser._id.toString();
-    const album = await deleteSingleAlbumService(albumId, userId);
+    await deleteSingleAlbumService(albumId, userId);
     res
       .status(200)
       .json({

@@ -5,13 +5,24 @@ import { createError } from "../utils/error.util";
 import APIFeatures from "../utils/APIFeatures.util";
 
 export const getAllUsersService = async (queryString: any) => {
-  const usersKey = `users:all`;
+  const normalizedQuery = Object.keys(queryString)
+    .sort()
+    .reduce((acc: any, key) => {
+      acc[key] = queryString[key];
+      return acc;
+    }, {});
+
+  const usersKey = `users:all:${JSON.stringify(normalizedQuery)}`;
   try {
     const cachedUsers = await RedisClient.get(usersKey);
     if (cachedUsers) {
       return JSON.parse(cachedUsers);
     }
-    const features = new APIFeatures(User.find(), queryString);
+    const features = new APIFeatures(User.find(), queryString)
+      .filter()
+      .sort()
+      .limitFields()
+      .paginate();
     const users = await features.query.lean();
     if (users.length > 0) {
       await RedisClient.setex(usersKey, 3600, JSON.stringify(users));
@@ -45,7 +56,7 @@ export const getSingleUserService = async (userId: string) => {
 
 export const updateMeService = async (userId: string, name: string) => {
   const userKey = `user:${userId}`;
-  const usersKey = `users:all`;
+  const usersKeyPrefix = `users:all:`;
   try {
     const user = await User.findByIdAndUpdate(
       userId,
@@ -59,8 +70,11 @@ export const updateMeService = async (userId: string, name: string) => {
       throw createError("Unable to update user", 404);
     }
 
-    RedisClient.del(userKey);
-    RedisClient.del(usersKey);
+    await RedisClient.del(userKey);
+    const usersCacheKeys = await RedisClient.keys(`${usersKeyPrefix}*`);
+    if (usersCacheKeys.length > 0) {
+      await RedisClient.del(...usersCacheKeys);
+    }
     return user;
   } catch (error) {
     throw error;
@@ -69,15 +83,18 @@ export const updateMeService = async (userId: string, name: string) => {
 
 export const deleteUserService = async (userId: string) => {
   const userKey = `user:${userId}`;
-  const usersKey = `users:all`;
+  const usersKeyPrefix = `users:all:`;
   try {
     const user = await User.findByIdAndDelete(userId);
     if (!user) {
       throw createError("No user found", 404);
     }
 
-    RedisClient.del(userKey);
-    RedisClient.del(usersKey);
+    await RedisClient.del(userKey);
+    const usersCacheKeys = await RedisClient.keys(`${usersKeyPrefix}*`);
+    if (usersCacheKeys.length > 0) {
+      await RedisClient.del(...usersCacheKeys);
+    }
     return user;
   } catch (error) {
     throw error;

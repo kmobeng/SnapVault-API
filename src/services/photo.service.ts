@@ -327,8 +327,16 @@ export const deletePhotoService = async (
 
     await PhotoAlbum.deleteMany({ photo: photo._id });
 
-    // Delete the photo from Cloudinary
-    await cloudinary.uploader.destroy(photo.publicId);
+    // External cleanup is best-effort so DB delete does not fail on Cloudinary errors.
+    try {
+      await cloudinary.uploader.destroy(photo.publicId);
+    } catch (cloudinaryError) {
+      logger.error("Cloudinary cleanup failed after DB photo delete", {
+        photoId: String(photo._id),
+        publicId: photo.publicId,
+        error: cloudinaryError,
+      });
+    }
 
     // Invalidate related Redis cache
     await invalidatePhotosCache(String(photo.user));

@@ -144,7 +144,7 @@ export const deletePhoto = async (
       throw createError("Please provide photoId", 400);
     }
     const userId = req.params.userId || req.currentUser._id.toString();
-    const photo = await deletePhotoService(
+    await deletePhotoService(
       photoId,
       userId,
       req.currentUser.role,
@@ -170,7 +170,7 @@ export const softDeletePhoto = async (
       throw createError("Please provide photoId", 400);
     }
 
-    const photo = await softDeletePhotoService(
+    await softDeletePhotoService(
       photoId,
       req.currentUser._id.toString(),
     );

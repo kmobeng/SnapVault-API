@@ -59,14 +59,13 @@ export const signUp = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const { name, email, password, passwordConfirm, role } = req.body;
+    const { name, email, password, passwordConfirm } = req.body;
 
     const fetchedUser = await signUpService(
       name,
       email,
       password,
       passwordConfirm,
-      role,
     );
 
     const accessToken = await Token(res, fetchedUser);
@@ -362,9 +361,13 @@ export const requestEmailVerify = async (
       },
       { new: true },
     );
+
+    if (!saveToken) {
+      throw createError("User not found", 404);
+    }
     // create message and send email
 
-    const message = `Hi ${saveToken!.name.split(" ")[0]}
+    const message = `Hi ${saveToken.name.split(" ")[0]}
       Enter this code to verify your email
       ${emailToken}`;
     try {
@@ -374,9 +377,9 @@ export const requestEmailVerify = async (
         message,
       });
     } catch (error) {
-      saveToken!.emailVerificationToken = null;
-      saveToken!.emailVerificationTokenExpires = null;
-      await saveToken!.save({ validateBeforeSave: false });
+      saveToken.emailVerificationToken = null;
+      saveToken.emailVerificationTokenExpires = null;
+      await saveToken.save({ validateBeforeSave: false });
 
       throw createError("Error while sending email", 500);
     }
