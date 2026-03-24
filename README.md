@@ -14,7 +14,9 @@ A secure RESTful API for storing and managing photos and albums. Built with Node
 - Soft delete, trash listing, restore, and permanent delete for photos
 - Album management with user ownership checks
 - Add multiple photos to albums with ownership validation and duplicate-safe inserts
+- Album single-read includes populated album-photo relations with deleted-photo filtering
 - Role-based authorization for admin actions
+- Public signup always creates role user accounts (role is server-controlled)
 - Redis caching for list/detail reads with cache invalidation on writes
 - Security middleware: Helmet, CORS, and route-level rate limiting
 - Structured request logging with Morgan + Winston
@@ -123,6 +125,7 @@ npm run start
 ## Security and Access Rules
 
 - Passwords are hashed with bcrypt.
+- Public signup ignores client-provided role values and always creates user role accounts.
 - Access and refresh tokens are stored in HttpOnly cookies; secure/sameSite are enabled in production.
 - On expired/invalid access token, middleware checks refresh token and issues a new access token when valid.
 - Password reset and email verification tokens are hashed with SHA-256 before storage.
@@ -151,6 +154,7 @@ Notes:
 
 - Google OAuth users are created with `needToChangePassword=true`, so they must call `PATCH /api/user/change-password` before accessing routes protected by `needToChangePassword`.
 - Auth-protected responses may include a refreshed `accessToken` in response body when middleware renews it.
+- Signup role is not configurable by clients; accounts are created as user.
 
 Verify email request body:
 
@@ -217,6 +221,8 @@ Notes:
 
 - Files are compressed server-side before upload (resize cap: 1920px width, JPEG quality 80).
 - Multi-upload uses concurrent Cloudinary uploads and bulk DB insertion.
+- Permanent photo delete removes DB records first; Cloudinary cleanup is best-effort and logged if it fails.
+
 
 ### Album Routes (/api)
 
@@ -245,6 +251,30 @@ Notes:
 
 - Photo IDs are validated and must belong to the same user.
 - Existing photos in the album are ignored via duplicate-safe insertion.
+- Single album responses include populated photo relations via the album virtual relation.
+
+
+Response shape for `PATCH /album/:albumId/addPhotos`:
+
+```json
+{
+  "status": "success",
+  "data": {
+    "album": {
+      "_id": "albumId",
+      "name": "Album Name",
+      "visibility": "private",
+      "user": "userId",
+      "createdAt": "2026-03-24T10:00:00.000Z"
+    },
+    "stats": {
+      "totalRequested": 3,
+      "inserted": 2,
+      "alreadyInAlbum": 1
+    }
+  }
+}
+```
 
 ## Project Structure
 
