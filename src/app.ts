@@ -48,6 +48,20 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use(passport.initialize());
 app.use(passport.session());
 
+app.get("/", (_req: Request, res: Response) => {
+  res.status(200).json({
+    success: true,
+    message: "Welcome to SnapVault API",
+  });
+});
+
+app.get("/health", (_req: Request, res: Response) => {
+  res.status(200).json({
+    success: true,
+    status: "healthy",
+  });
+});
+
 app.use("/api/auth", authRoute);
 
 app.use("/api/user", userRoute);
