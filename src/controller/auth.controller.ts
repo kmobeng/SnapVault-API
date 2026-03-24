@@ -106,7 +106,7 @@ export const signUp = async (
     delete user.refreshToken;
     delete user.refreshTokenExpires;
 
-    const message = `Welcome to Photo Vault, ${user.name}!
+    const message = `Welcome to SnapVault, ${user.name}!
     Please verify your email to access all features of our application with this token: ${verificationToken}
 
      This token is valid for 30 minutes. If you didn't create an account, please ignore this email.`;

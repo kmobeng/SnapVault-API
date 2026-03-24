@@ -58,7 +58,7 @@ const uploadCompressedPhotoToCloudinary = async (buffer: Buffer) => {
   return new Promise<any>((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       {
-        folder: "photo-vault",
+        folder: "snapvault",
         resource_type: "image",
       },
       (error, result) => {
@@ -248,7 +248,7 @@ export const getSinglePhotoService = async (
     if (!isOwner) {
       query.visibility = "public";
     }
-    
+
     const photo = await Photo.findOne(query);
     if (!photo) {
       throw createError("No photo found", 404);

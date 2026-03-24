@@ -1,4 +1,4 @@
-# Photo Vault API
+# SnapVault
 
 A secure RESTful API for storing and managing photos and albums. Built with Node.js, Express, TypeScript, MongoDB, and Redis.
 
@@ -47,8 +47,8 @@ A secure RESTful API for storing and managing photos and albums. Built with Node
 ### Installation
 
 ```bash
-git clone https://github.com/your-username/photo-vault.git
-cd photo-vault
+git clone https://github.com/kmobeng/photo-vault.git
+cd snapvault
 npm install
 ```
 
@@ -69,7 +69,7 @@ NODE_ENV=development
 CLIENT_URL=http://localhost:4000
 
 # Database
-DB_URL=mongodb://localhost:27017/photo-vault
+DB_URL=mongodb://localhost:27017/snapvault
 
 # Redis
 REDIS_URL=redis://localhost:6379
@@ -92,7 +92,7 @@ CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 
 # Email
-EMAIL_FROM=Photo Vault <noreply@yourdomain.com>
+EMAIL_FROM=SnapVault <noreply@yourdomain.com>
 
 # SendGrid (production)
 SENDGRID_USERNAME=apikey
@@ -223,7 +223,6 @@ Notes:
 - Multi-upload uses concurrent Cloudinary uploads and bulk DB insertion.
 - Permanent photo delete removes DB records first; Cloudinary cleanup is best-effort and logged if it fails.
 
-
 ### Album Routes (/api)
 
 Global middleware: protect, isEmailVerified, needToChangePassword, apiLimiter
@@ -252,7 +251,6 @@ Notes:
 - Photo IDs are validated and must belong to the same user.
 - Existing photos in the album are ignored via duplicate-safe insertion.
 - Single album responses include populated photo relations via the album virtual relation.
-
 
 Response shape for `PATCH /album/:albumId/addPhotos`:
 
