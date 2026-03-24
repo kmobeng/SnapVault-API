@@ -6,7 +6,6 @@ const AlbumSchema = new Schema(
       type: String,
       required: [true, "Album name is required"],
       trim: true,
-      unique: true,
     },
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
     visibility: {
@@ -19,10 +18,11 @@ const AlbumSchema = new Schema(
   {
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
-  }
+  },
 );
 
 AlbumSchema.index({ user: 1, createdAt: -1 });
+AlbumSchema.index({ user: 1, name: 1 }, { unique: true });
 
 AlbumSchema.virtual("photos", {
   ref: "PhotoAlbum",

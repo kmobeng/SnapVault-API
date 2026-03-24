@@ -19,11 +19,11 @@ export const createAlbum = async (
 
     const { name, visibility } = req.body;
     if (!name) {
-      return createError("Please provide name of album", 400);
+      throw createError("Please provide name of album", 400);
     }
 
     if (!visibility) {
-      return createError("Please provide visibility of album", 400);
+      throw createError("Please provide visibility of album", 400);
     }
 
     const album = await createAlbumService(name,visibility, userId.toString());

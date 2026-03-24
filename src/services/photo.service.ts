@@ -1,10 +1,52 @@
-import mongoose, { Types } from "mongoose";
+import mongoose from "mongoose";
 import sharp from "sharp";
 import Photo from "../model/photo.model";
 import { createError } from "../utils/error.util";
 import { cloudinary, RedisClient } from "../config/db.config";
 import APIFeatures from "../utils/APIFeatures.util";
 import logger from "../config/wiston.config";
+import PhotoAlbum from "../model/photoAlbum.model";
+import { invalidateSingleAlbumCacheService } from "./album.service";
+
+const getPhotosCacheIndexKey = (userId: string) => `photos:index:${userId}`;
+
+const trackPhotosCacheKey = async (userId: string, cacheKey: string) => {
+  await RedisClient.sadd(getPhotosCacheIndexKey(userId), cacheKey);
+};
+
+const invalidatePhotosCache = async (userId: string) => {
+  const indexKey = getPhotosCacheIndexKey(userId);
+  const cachedKeys = await RedisClient.smembers(indexKey);
+
+  if (cachedKeys.length > 0) {
+    await RedisClient.del(...cachedKeys);
+  }
+
+  await RedisClient.del(indexKey);
+};
+
+const getPhotoCacheKeys = (photoId: string) => [
+  `photo:${photoId}:owner`,
+  `photo:${photoId}:public`,
+];
+
+const invalidateSinglePhotoCache = async (photoId: string) => {
+  await RedisClient.del(...getPhotoCacheKeys(photoId));
+};
+
+const invalidateAlbumCachesForPhoto = async (photoId: string) => {
+  const albumIds = await PhotoAlbum.distinct("album", { photo: photoId });
+
+  if (albumIds.length === 0) {
+    return;
+  }
+
+  await Promise.all(
+    albumIds.map((albumId) =>
+      invalidateSingleAlbumCacheService(String(albumId)),
+    ),
+  );
+};
 
 const uploadCompressedPhotoToCloudinary = async (buffer: Buffer) => {
   const compressedBuffer = await sharp(buffer)
@@ -59,10 +101,7 @@ export const uploadPhotoService = async (
       user: userId,
     });
 
-    const keys = await RedisClient.keys(`photos:${userId}:*`);
-    if (keys.length > 0) {
-      await RedisClient.del(...keys);
-    }
+    await invalidatePhotosCache(userId);
 
     if (!createdPhoto) {
       throw createError("Unable to create photo", 400);
@@ -118,10 +157,7 @@ export const uploadMultiplePhotosService = async (
 
     const createdPhotos = await Photo.insertMany(uploadedPhotos);
 
-    const keys = await RedisClient.keys(`photos:${userId}:*`);
-    if (keys.length > 0) {
-      await RedisClient.del(...keys);
-    }
+    await invalidatePhotosCache(userId);
 
     return createdPhotos;
   } catch (error) {
@@ -141,14 +177,16 @@ export const getAllPhotosService = async (
   reqUserId: string,
   queryString: any,
 ) => {
+  const query = { ...queryString };
+
   if (userId !== reqUserId) {
-    queryString.visibility = "public";
+    query.visibility = "public";
   }
 
-  const normalizedQuery = Object.keys(queryString)
+  const normalizedQuery = Object.keys(query)
     .sort()
     .reduce((acc: any, key) => {
-      acc[key] = queryString[key];
+      acc[key] = query[key];
       return acc;
     }, {});
 
@@ -161,7 +199,7 @@ export const getAllPhotosService = async (
     }
     const filter: any = { user: userId, isDeleted: false };
 
-    const features = new APIFeatures(Photo.find(filter), queryString)
+    const features = new APIFeatures(Photo.find(filter), query)
       .filter()
       .sort()
       .limitFields()
@@ -170,6 +208,7 @@ export const getAllPhotosService = async (
     const photos = await features.query;
 
     await RedisClient.setex(photosKey, 3600, JSON.stringify(photos));
+    await trackPhotosCacheKey(userId, photosKey);
 
     return photos;
   } catch (error) {
@@ -215,7 +254,7 @@ export const getSinglePhotoService = async (
       throw createError("No photo found", 404);
     }
     // Cache the photo in Redis for future requests
-    RedisClient.setex(photoKey, 3600, JSON.stringify(photo));
+    await RedisClient.setex(photoKey, 3600, JSON.stringify(photo));
 
     return photo;
   } catch (error) {
@@ -245,13 +284,8 @@ export const updatePhotoService = async (
     if (!photo) {
       throw createError("No photo Id", 400);
     }
-    const photosKey = await RedisClient.keys(`photos:${userId}:*`);
-
-    if (photosKey.length !== 0) {
-      await RedisClient.del(...photosKey);
-    }
-    await RedisClient.del(`photo:${photoId}:owner`);
-    await RedisClient.del(`photo:${photoId}:public`);
+    await invalidatePhotosCache(userId);
+    await invalidateSinglePhotoCache(photoId);
 
     return photo;
   } catch (error) {
@@ -289,17 +323,22 @@ export const deletePhotoService = async (
       throw createError("No photo found", 404);
     }
 
+    const albumIds = await PhotoAlbum.distinct("album", { photo: photo._id });
+
+    await PhotoAlbum.deleteMany({ photo: photo._id });
+
     // Delete the photo from Cloudinary
     await cloudinary.uploader.destroy(photo.publicId);
 
     // Invalidate related Redis cache
-    const photosKey = await RedisClient.keys(`photos:${userId}:*`);
+    await invalidatePhotosCache(String(photo.user));
+    await invalidateSinglePhotoCache(photoId);
 
-    if (photosKey.length !== 0) {
-      await RedisClient.del(...photosKey);
-    }
-    await RedisClient.del(`photo:${userId}:${photoId}:owner`);
-    await RedisClient.del(`photo:${userId}:${photoId}:public`);
+    await Promise.all(
+      albumIds.map((albumId) =>
+        invalidateSingleAlbumCacheService(String(albumId)),
+      ),
+    );
 
     return photo;
   } catch (error) {
@@ -319,14 +358,14 @@ export const softDeletePhotoService = async (photoId: any, userId: string) => {
       { new: true },
     );
 
-    // Invalidate related Redis cache
-    const photosKey = await RedisClient.keys(`photos:${userId}:*`);
-
-    if (photosKey.length !== 0) {
-      await RedisClient.del(...photosKey);
+    if (!photo) {
+      throw createError("No photo found", 404);
     }
-    await RedisClient.del(`photo:${userId}:${photoId}:owner`);
-    await RedisClient.del(`photo:${userId}:${photoId}:public`);
+
+    // Invalidate related Redis cache
+    await invalidatePhotosCache(userId);
+    await invalidateSinglePhotoCache(photoId);
+    await invalidateAlbumCachesForPhoto(photoId);
 
     return photo;
   } catch (error) {
@@ -346,13 +385,13 @@ export const restorePhotoService = async (photoId: any, userId: string) => {
       { new: true },
     );
 
-    const photosKey = await RedisClient.keys(`photos:${userId}:*`);
-
-    if (photosKey.length !== 0) {
-      await RedisClient.del(...photosKey);
+    if (!photo) {
+      throw createError("No photo found", 404);
     }
-    await RedisClient.del(`photo:${photoId}:owner`);
-    await RedisClient.del(`photo:${photoId}:public`);
+
+    await invalidatePhotosCache(userId);
+    await invalidateSinglePhotoCache(photoId);
+    await invalidateAlbumCachesForPhoto(photoId);
 
     return photo;
   } catch (error) {

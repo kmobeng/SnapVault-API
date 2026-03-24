@@ -38,6 +38,10 @@ const invalidateAlbumCache = async (albumId: string) => {
   await RedisClient.del(indexKey);
 };
 
+export const invalidateSingleAlbumCacheService = async (albumId: string) => {
+  await invalidateAlbumCache(albumId);
+};
+
 export const createAlbumService = async (
   name: string,
   visibility: string,
@@ -135,10 +139,20 @@ export const getSingleAlbumService = async (
       throw createError("No album found", 404);
     }
 
-    await RedisClient.setex(albumKey, 3600, JSON.stringify(album));
+    // Remove relation rows whose nested photo failed the match filter.
+    const photos = Array.isArray((album as any).photos)
+      ? (album as any).photos.filter((row: any) => row?.photo)
+      : [];
+
+    const hydratedAlbum = {
+      ...(album as any),
+      photos,
+    };
+
+    await RedisClient.setex(albumKey, 3600, JSON.stringify(hydratedAlbum));
     await trackAlbumCacheKey(albumId, albumKey);
 
-    return album;
+    return hydratedAlbum;
   } catch (error) {
     throw error;
   }
@@ -191,9 +205,10 @@ export const deleteSingleAlbumService = async (
       throw createError("Unable to delete album", 400);
     }
 
-    await invalidateAlbumsCache(userId);
+    await PhotoAlbum.deleteMany({ album: albumId });
 
-  await invalidateAlbumCache(albumId);
+    await invalidateAlbumsCache(userId);
+    await invalidateAlbumCache(albumId);
 
     return album;
   } catch (error) {
