@@ -8,14 +8,13 @@ const PhotoAlbumSchema = new mongoose.Schema({
 });
 
 PhotoAlbumSchema.index({ user: 1, createdAt: -1 });
-PhotoAlbumSchema.index({album: 1, photo: 1 }, { unique: true });
+PhotoAlbumSchema.index({ album: 1, photo: 1 }, { unique: true });
+PhotoAlbumSchema.index({ photo: 1, album: 1 });
 PhotoAlbumSchema.index({ user: 1, album: 1, createdAt: -1 });
 PhotoAlbumSchema.index({ user: 1, photo: 1, createdAt: -1 });
-
-
 
 type IPhotoAlbum = InferSchemaType<typeof PhotoAlbumSchema>;
 
 const PhotoAlbum = model<IPhotoAlbum>("PhotoAlbum", PhotoAlbumSchema);
 
-export default PhotoAlbum
+export default PhotoAlbum;

@@ -52,6 +52,13 @@ const UserSchema = new Schema({
   passwordResetExpires: { type: Date, default: null, select: false },
 });
 
+UserSchema.index({ refreshToken: 1, refreshTokenExpires: 1 });
+UserSchema.index({ passwordResetToken: 1, passwordResetExpires: 1 });
+UserSchema.index({
+  emailVerificationToken: 1,
+  emailVerificationTokenExpires: 1,
+});
+
 UserSchema.pre("save", async function (this: any) {
   if (!this.isModified("password")) return;
 

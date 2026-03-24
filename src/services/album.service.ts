@@ -126,10 +126,13 @@ export const getSingleAlbumService = async (
       _id: albumId,
       user: userId,
     };
+    const isOwner = user === userId;
 
-    if (user !== userId) {
+    if (!isOwner) {
       query.visibility = "public";
     }
+
+    const photoVisibilityMatch = isOwner ? {} : { visibility: "public" };
 
     const album = await Album.findOne(query)
       .populate({
@@ -137,7 +140,7 @@ export const getSingleAlbumService = async (
         match: { user: userId },
         populate: {
           path: "photo",
-          match: { isDeleted: false },
+          match: { isDeleted: false, ...photoVisibilityMatch },
         },
       })
       .lean();

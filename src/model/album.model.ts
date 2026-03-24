@@ -22,6 +22,7 @@ const AlbumSchema = new Schema(
 );
 
 AlbumSchema.index({ user: 1, createdAt: -1 });
+AlbumSchema.index({ user: 1, visibility: 1, createdAt: -1 });
 AlbumSchema.index({ user: 1, name: 1 }, { unique: true });
 
 AlbumSchema.virtual("photos", {

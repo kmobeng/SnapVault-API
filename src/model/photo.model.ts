@@ -16,7 +16,8 @@ const PhotoSchema = new Schema({
   deletedAt: Date,
 });
 
-PhotoSchema.index({ user: 1, visibility: 1, createdAt: -1 });
+PhotoSchema.index({ user: 1, isDeleted: 1, createdAt: -1 });
+PhotoSchema.index({ user: 1, visibility: 1, isDeleted: 1, createdAt: -1 });
 
 export type IPhoto = InferSchemaType<typeof PhotoSchema>;
 
