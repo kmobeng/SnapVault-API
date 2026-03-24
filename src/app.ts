@@ -13,6 +13,7 @@ import httpLogger from "./config/httpLogger.config";
 import cookieParser from "cookie-parser";
 
 const app = express();
+app.set("trust proxy", 1)
 
 const allowedOrigin = process.env.CLIENT_URL;
 
