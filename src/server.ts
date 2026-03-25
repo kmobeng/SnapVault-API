@@ -7,6 +7,7 @@ import logger from "./config/wiston.config";
 const startServer = async () => {
   try {
     await connectDB();
+
     app.listen(process.env.PORT, () => {
       logger.info(`Server is listening on port ${process.env.PORT}`);
     });

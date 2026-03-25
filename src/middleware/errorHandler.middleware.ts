@@ -38,6 +38,8 @@ export const errorHandler = (
   let isOperational = Boolean(err.isOperational);
 
   if (err.code === 11000) {
+    console.log("keyPattern:", err.keyPattern);
+  console.log("keyValue:", err.keyValue);
     statusCode = 400;
     isOperational = true;
     const duplicateField = Object.keys(err.keyPattern || {})[0];

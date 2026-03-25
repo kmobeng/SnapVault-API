@@ -7,7 +7,7 @@ import logger from "./wiston.config";
 export const connectDB = async () => {
   try {
     await mongoose.connect(process.env.DB_URL!);
-    logger.info("connected to database successfully")
+    logger.info("connected to database successfully");
   } catch (error) {
     logger.error("Error connecting to database", error);
     process.exit(1);
@@ -15,14 +15,24 @@ export const connectDB = async () => {
 };
 
 // redis connection
-export const RedisClient = new Redis(process.env.REDIS_URL!);
+export const RedisClient = new Redis(process.env.REDIS_URL!, {
+  tls: {},
+  maxRetriesPerRequest: 3,
+  retryStrategy: (times) => {
+    if (times > 5) {
+      logger.error("Redis max retries reached. Check REDIS_URL.");
+      return null;
+    }
+    return times * 500;
+  },
+});
 
 RedisClient.on("error", (err) => {
-  logger.error("Redis error",err)
+  logger.error("Redis error", err);
 });
 
 RedisClient.on("connect", () => {
-  logger.info('Connected to redis')
+  logger.info("Connected to redis");
 });
 
 // cloudinary configuration
