@@ -11,9 +11,12 @@ import cookieSession from "cookie-session";
 import passport from "passport";
 import httpLogger from "./config/httpLogger.config";
 import cookieParser from "cookie-parser";
+import mongoSanitize from "express-mongo-sanitize";
+import { xss } from "express-xss-sanitizer";
+import hpp from "hpp";
 
 const app = express();
-app.set("trust proxy", 1)
+app.set("trust proxy", 1);
 
 const allowedOrigin = process.env.CLIENT_URL;
 
@@ -36,6 +39,17 @@ app.use(
   }),
 );
 
+app.use((req, res, next) => {
+  if (req.body) mongoSanitize.sanitize(req.body);
+  if (req.query) mongoSanitize.sanitize(req.query);
+  if (req.params) mongoSanitize.sanitize(req.params);
+  next();
+});
+
+app.use(xss({ allowedTags: [], allowedAttributes: {} }));
+
+app.use(hpp());
+
 app.use((req: Request, res: Response, next: NextFunction) => {
   if (req.session && !req.session.regenerate) {
     req.session.regenerate = (cb: any) => cb();
@@ -56,7 +70,7 @@ app.get("/", (_req: Request, res: Response) => {
   });
 });
 
-app.get("/health", (_req: Request, res: Response) => {
+app.get("/api/health", (_req: Request, res: Response) => {
   res.status(200).json({
     success: true,
     status: "healthy",

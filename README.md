@@ -1,3 +1,5 @@
+**Live API URL:** [https://snapvault-api.up.railway.app/](https://snapvault-api.up.railway.app/)
+
 # SnapVault
 
 A secure RESTful API for storing and managing photos and albums. Built with Node.js, Express, TypeScript, MongoDB, and Redis.
