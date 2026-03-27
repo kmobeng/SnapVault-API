@@ -8,6 +8,14 @@ import {
 import User, { IUser } from "../model/user.model";
 import sendEmail from "../utils/email.util";
 import crypto from "crypto";
+import {
+  forgotPasswordSchema,
+  loginSchema,
+  resetPasswordSchema,
+  resetPasswordTokenSchema,
+  signupSchema,
+  verifyEmailTokenSchema,
+} from "../validators/auth.validator";
 
 const setAccessTokenCookieOptions = () => {
   const cookieOptions: any = {
@@ -59,6 +67,14 @@ export const signUp = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
+    const parsed = signupSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const errorMessages = parsed.error.issues
+        .map((err: any) => err.message)
+        .join(", ");
+      throw createError(errorMessages, 400);
+    }
+
     const { name, email, password, passwordConfirm } = req.body;
 
     const fetchedUser = await signUpService(
@@ -131,7 +147,6 @@ export const signUp = async (
 
     res.status(201).json({
       status: "success",
-      accessToken,
       message: "Email verification token sent to email",
       data: { user },
     });
@@ -146,10 +161,15 @@ export const login = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      throw createError("Please enter email and password", 400);
+    const parsed = loginSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const errorMessages = parsed.error.issues
+        .map((err: any) => err.message)
+        .join(", ");
+      throw createError(errorMessages, 400);
     }
+
+    const { email, password } = req.body;
 
     const refreshToken = crypto.randomBytes(32).toString("hex");
     const hashedRefreshToken = crypto
@@ -182,7 +202,6 @@ export const login = async (
 
     res.status(200).json({
       status: "success",
-      accessToken,
       data: { user },
     });
   } catch (error) {
@@ -196,15 +215,19 @@ export const forgotPassword = async (
   next: NextFunction,
 ) => {
   try {
-    const { email } = req.body;
-
-    if (!email) {
-      return next(createError("Please enter email", 400));
+    const parsed = forgotPasswordSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const errorMessages = parsed.error.issues
+        .map((err: any) => err.message)
+        .join(", ");
+      throw createError(errorMessages, 400);
     }
+
+    const { email } = req.body;
 
     const user = await User.findOne({ email });
     if (!user) {
-      return next(createError("No user with this email found", 404));
+      throw createError("There is no user with this email", 404);
     }
 
     const resetToken = user.createPasswordToken();
@@ -250,12 +273,31 @@ export const resetPassword = async (
   next: NextFunction,
 ) => {
   try {
+    const parsequery = resetPasswordTokenSchema.safeParse(req.params);
+
+    if (!parsequery.success) {
+      const errorMessages = parsequery.error.issues
+        .map((err: any) => err.message)
+        .join(", ");
+      throw createError(errorMessages, 400);
+    }
+
+    const parsed = resetPasswordSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const errorMessages = parsed.error.issues
+        .map((err: any) => err.message)
+        .join(", ");
+      throw createError(errorMessages, 400);
+    }
+
     const { token } = req.params;
 
-    if (!token) {
-      throw createError("Token is required", 400);
-    }
-    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+    const { password, passwordConfirm } = req.body;
+
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(token!)
+      .digest("hex");
 
     const user = await User.findOne({
       passwordResetToken: hashedToken,
@@ -263,11 +305,11 @@ export const resetPassword = async (
     });
 
     if (!user) {
-      return next(createError("Token is invalid or has expired", 400));
+      throw createError("Token is invalid or has expired", 400);
     }
 
-    user.password = req.body.password;
-    user.passwordConfirm = req.body.passwordConfirm;
+    user.password = password;
+    user.passwordConfirm = passwordConfirm;
     user.passwordResetToken = null;
     user.passwordResetExpires = null;
 
@@ -318,7 +360,6 @@ export const googleRedirect = async (
 
     res.status(200).json({
       status: "success",
-      accessToken,
       message:
         authAction === "signup"
           ? "Account created with Google. Please set password to continue."
@@ -386,7 +427,6 @@ export const requestEmailVerify = async (
     // send response to user
     res.status(200).json({
       status: "success",
-      accessToken: res.locals.token,
       message: "OTP has been sent to your email",
     });
   } catch (error) {
@@ -400,32 +440,40 @@ export const verifyEmail = async (
   next: NextFunction,
 ) => {
   try {
-    const { emailToken } = req.body;
-    if (!emailToken) {
-      throw createError("Please provide token", 400);
+    const parsed = verifyEmailTokenSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const errorMessages = parsed.error.issues
+        .map((err: any) => err.message)
+        .join(", ");
+      throw createError(errorMessages, 400);
     }
+
+    const { emailToken } = req.body;
+
     const hashedToken = crypto
       .createHash("sha256")
       .update(emailToken.toString())
       .digest("hex");
 
-    const user = await User.findOne({
-      emailVerificationToken: hashedToken,
-      emailVerificationTokenExpires: { $gt: new Date(Date.now()) },
-    });
+    const user = await User.findOneAndUpdate(
+      {
+        emailVerificationToken: hashedToken,
+        emailVerificationTokenExpires: { $gt: new Date(Date.now()) },
+      },
+      {
+        isEmailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationTokenExpires: null,
+      },
+      { new: true },
+    );
 
     if (!user) {
       throw createError("Invalid or expired verification token", 404);
     }
 
-    user.isEmailVerified = true;
-    user.emailVerificationToken = null;
-    user.emailVerificationTokenExpires = null;
-    await user.save({ validateBeforeSave: false });
-
     res.status(200).json({
       status: "success",
-      accessToken: res.locals.token,
       message: "Email verified!",
     });
   } catch (error) {

@@ -9,21 +9,17 @@ export const signUpService = async (
   passwordConfirm: string,
 ) => {
   try {
-    const usersKeyPrefix = `users:all:`;
+    const usersKey = `users:all`;
     const user = await User.create({
       name,
       email,
       password,
       passwordConfirm,
-      role: "user",
     });
     if (!user) {
       throw createError("Error while creating user", 400);
     }
-    const usersCacheKeys = await RedisClient.keys(`${usersKeyPrefix}*`);
-    if (usersCacheKeys.length > 0) {
-      await RedisClient.del(...usersCacheKeys);
-    }
+    await RedisClient.del(usersKey);
     return user;
   } catch (error) {
     throw error;
