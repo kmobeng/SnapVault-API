@@ -38,5 +38,5 @@ export const resetPasswordSchema = z
   });
   
   export const verifyEmailTokenSchema = z.object({
-    token: z.string().min(1, "Token is required"),
+    emailToken: z.string().min(1, "Token is required"),
   });

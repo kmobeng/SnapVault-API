@@ -75,7 +75,7 @@ export const signUp = async (
       throw createError(errorMessages, 400);
     }
 
-    const { name, email, password, passwordConfirm } = req.body;
+    const { name, email, password, passwordConfirm } = parsed.data;
 
     const fetchedUser = await signUpService(
       name,
@@ -169,7 +169,7 @@ export const login = async (
       throw createError(errorMessages, 400);
     }
 
-    const { email, password } = req.body;
+    const { email, password } = parsed.data;
 
     const refreshToken = crypto.randomBytes(32).toString("hex");
     const hashedRefreshToken = crypto
@@ -223,7 +223,7 @@ export const forgotPassword = async (
       throw createError(errorMessages, 400);
     }
 
-    const { email } = req.body;
+    const { email } = parsed.data;
 
     const user = await User.findOne({ email });
     if (!user) {
@@ -292,7 +292,7 @@ export const resetPassword = async (
 
     const { token } = req.params;
 
-    const { password, passwordConfirm } = req.body;
+    const { password, passwordConfirm } = parsed.data;
 
     const hashedToken = crypto
       .createHash("sha256")
@@ -448,7 +448,7 @@ export const verifyEmail = async (
       throw createError(errorMessages, 400);
     }
 
-    const { emailToken } = req.body;
+    const { emailToken } = parsed.data;
 
     const hashedToken = crypto
       .createHash("sha256")
