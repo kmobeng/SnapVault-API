@@ -17,7 +17,7 @@ const uploadCompressedPhotoToCloudinary = async (buffer: Buffer) => {
   const compressedBuffer = await sharp(buffer)
     .rotate()
     .resize({ width: 1920, withoutEnlargement: true })
-    .jpeg({ quality: 80 })
+    .webp({ quality: 80 })
     .toBuffer();
 
   return new Promise<any>((resolve, reject) => {
