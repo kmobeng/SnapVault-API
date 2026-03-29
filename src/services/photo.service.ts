@@ -101,11 +101,11 @@ export const uploadPhotoService = async (
       user: userId,
     });
 
-    await invalidatePhotosCache(userId);
-
     if (!createdPhoto) {
       throw createError("Unable to create photo", 400);
     }
+
+    await invalidatePhotosCache(userId);
     return createdPhoto;
   } catch (error) {
     if (publicId) {
@@ -264,6 +264,7 @@ export const getSinglePhotoService = async (
 
 export const updatePhotoService = async (
   title: string,
+  description: string,
   visibility: string,
   photoId: any,
   userId: string,
@@ -278,7 +279,7 @@ export const updatePhotoService = async (
 
     const photo: any = await Photo.findOneAndUpdate(
       { _id: photoId, user: userId, isDeleted: false },
-      { $set: { title, visibility } },
+      { $set: { title, visibility, description } },
       { new: true, runValidators: true },
     );
     if (!photo) {

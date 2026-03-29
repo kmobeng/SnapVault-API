@@ -11,6 +11,11 @@ import {
   viewDeletedPhotosService,
 } from "../services/photo.service";
 import { createError } from "../utils/error.util";
+import {
+  getAllPhotosSchema,
+  updatePhotoSchema,
+  uploadPhotoSchema,
+} from "../validators/photo.validator";
 
 export const uploadPhoto = async (
   req: Request,
@@ -18,7 +23,14 @@ export const uploadPhoto = async (
   next: NextFunction,
 ) => {
   try {
-    const { title, description, visibility } = req.body;
+    const parsed = uploadPhotoSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const errorMessages = parsed.error.issues
+        .map((err: any) => err.message)
+        .join(", ");
+      throw createError(errorMessages, 400);
+    }
+    const { title, description, visibility } = parsed.data;
 
     const userId = req.currentUser._id.toString();
     const files = req.files as Express.Multer.File[];
@@ -59,11 +71,19 @@ export const getAllPhotos = async (
   next: NextFunction,
 ) => {
   try {
+    const parsed = getAllPhotosSchema.safeParse(req.query);
+    if (!parsed.success) {
+      const errorMessages = parsed.error.issues
+        .map((err: any) => err.message)
+        .join(", ");
+      throw createError(errorMessages, 400);
+    }
     const userId = req.params.userId || req.currentUser._id.toString();
+    const queryString = parsed.data;
     const photos = await getAllPhotosService(
       userId,
       req.currentUser._id.toString(),
-      req.query,
+      queryString,
     );
 
     if (photos.length === 0) {
@@ -115,13 +135,29 @@ export const updatePhoto = async (
   next: NextFunction,
 ) => {
   try {
-    const { title, visibility } = req.body;
+    const parsed = updatePhotoSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const errorMessages = parsed.error.issues
+        .map((err: any) => err.message)
+        .join(", ");
+      throw createError(errorMessages, 400);
+    }
+    const { title, visibility, description } = parsed.data;
+    if (!title || !visibility || !description) {
+      throw createError("All fields are required", 400);
+    }
     const { photoId } = req.params;
     if (!photoId) {
-      throw createError("No photoID provided", 400);
+      throw createError("No photoId provided", 400);
     }
     const userId = req.currentUser._id.toString();
-    const photo = await updatePhotoService(title, visibility, photoId, userId);
+    const photo = await updatePhotoService(
+      title,
+      visibility,
+      description,
+      photoId,
+      userId,
+    );
 
     res.status(200).json({
       status: "success",
@@ -144,11 +180,7 @@ export const deletePhoto = async (
       throw createError("Please provide photoId", 400);
     }
     const userId = req.params.userId || req.currentUser._id.toString();
-    await deletePhotoService(
-      photoId,
-      userId,
-      req.currentUser.role,
-    );
+    await deletePhotoService(photoId, userId, req.currentUser.role);
 
     res.status(200).json({
       status: "success",
@@ -170,10 +202,7 @@ export const softDeletePhoto = async (
       throw createError("Please provide photoId", 400);
     }
 
-    await softDeletePhotoService(
-      photoId,
-      req.currentUser._id.toString(),
-    );
+    await softDeletePhotoService(photoId, req.currentUser._id.toString());
 
     res.status(200).json({
       status: "success",
