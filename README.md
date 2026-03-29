@@ -19,7 +19,8 @@ A secure RESTful API for storing and managing photos and albums. Built with Node
 - Album single-read includes populated album-photo relations with deleted-photo filtering
 - Role-based authorization for admin actions
 - Public signup always creates role user accounts (role is server-controlled)
-- Redis caching for list/detail reads with cache invalidation on writes
+- Input validation with Zod schemas for auth and photo endpoints
+- Redis caching for list/detail reads with SCAN-based cache invalidation on writes
 - Security middleware: Helmet, CORS, and route-level rate limiting
 - Structured request logging with Morgan + Winston
 
@@ -31,6 +32,7 @@ A secure RESTful API for storing and managing photos and albums. Built with Node
 | Framework | Express 5                           |
 | Database  | MongoDB (Mongoose)                  |
 | Cache     | Redis (ioredis)                     |
+| Validation| Zod                                 |
 | Storage   | Cloudinary                          |
 | Auth      | JWT, Passport.js (Google OAuth 2.0) |
 | Email     | Nodemailer                          |
@@ -221,6 +223,7 @@ visibility: public | private
 
 Notes:
 
+- Request bodies and route params are validated with Zod schemas (title, description, visibility, photoId, userId).
 - Files are compressed server-side before upload (resize cap: 1920px width, JPEG quality 80).
 - Multi-upload uses concurrent Cloudinary uploads and bulk DB insertion.
 - Permanent photo delete removes DB records first; Cloudinary cleanup is best-effort and logged if it fails.
@@ -289,4 +292,5 @@ src/
   router/
   services/
   utils/
+  validators/
 ```
