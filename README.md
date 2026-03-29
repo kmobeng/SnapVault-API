@@ -19,24 +19,24 @@ A secure RESTful API for storing and managing photos and albums. Built with Node
 - Album single-read includes populated album-photo relations with deleted-photo filtering
 - Role-based authorization for admin actions
 - Public signup always creates role user accounts (role is server-controlled)
-- Input validation with Zod schemas for auth and photo endpoints
+- Input validation with Zod schemas for request bodies across all endpoints
 - Redis caching for list/detail reads with SCAN-based cache invalidation on writes
 - Security middleware: Helmet, CORS, and route-level rate limiting
 - Structured request logging with Morgan + Winston
 
 ## Tech Stack
 
-| Layer     | Technology                          |
-| --------- | ----------------------------------- |
-| Runtime   | Node.js + TypeScript                |
-| Framework | Express 5                           |
-| Database  | MongoDB (Mongoose)                  |
-| Cache     | Redis (ioredis)                     |
-| Validation| Zod                                 |
-| Storage   | Cloudinary                          |
-| Auth      | JWT, Passport.js (Google OAuth 2.0) |
-| Email     | Nodemailer                          |
-| Logging   | Winston, Morgan                     |
+| Layer      | Technology                          |
+| ---------- | ----------------------------------- |
+| Runtime    | Node.js + TypeScript                |
+| Framework  | Express 5                           |
+| Database   | MongoDB (Mongoose)                  |
+| Cache      | Redis (ioredis)                     |
+| Validation | Zod                                 |
+| Storage    | Cloudinary                          |
+| Auth       | JWT, Passport.js (Google OAuth 2.0) |
+| Email      | Nodemailer                          |
+| Logging    | Winston, Morgan                     |
 
 ## Getting Started
 
@@ -157,7 +157,7 @@ Base URL: /api
 Notes:
 
 - Google OAuth users are created with `needToChangePassword=true`, so they must call `PATCH /api/user/change-password` before accessing routes protected by `needToChangePassword`.
-- Auth-protected responses may include a refreshed `accessToken` in response body when middleware renews it.
+- Refreshed access tokens are delivered via HttpOnly cookies only; they are not included in JSON response bodies.
 - Signup role is not configurable by clients; accounts are created as user.
 
 Verify email request body:
@@ -223,7 +223,7 @@ visibility: public | private
 
 Notes:
 
-- Request bodies and route params are validated with Zod schemas (title, description, visibility, photoId, userId).
+- Request bodies are validated with Zod schemas (title, description, visibility).
 - Files are compressed server-side before upload (resize cap: 1920px width, JPEG quality 80).
 - Multi-upload uses concurrent Cloudinary uploads and bulk DB insertion.
 - Permanent photo delete removes DB records first; Cloudinary cleanup is best-effort and logged if it fails.

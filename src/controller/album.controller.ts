@@ -9,6 +9,11 @@ import {
   updateSingleAlbumService,
 } from "../services/album.service";
 import { createError } from "../utils/error.util";
+import {
+  albumPhotosSchema,
+  createAlbumSchema,
+  updateAlbumSchema,
+} from "../validators/album.validator";
 
 export const createAlbum = async (
   req: Request,
@@ -16,21 +21,18 @@ export const createAlbum = async (
   next: NextFunction,
 ) => {
   try {
+    const parsed = createAlbumSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const errorMessages = parsed.error.issues
+        .map((err: any) => err.message)
+        .join(", ");
+      throw createError(errorMessages, 400);
+    }
+
+    const { name, visibility } = parsed.data;
     const userId = req.currentUser._id;
-
-    const { name, visibility } = req.body;
-    if (!name) {
-      throw createError("Please provide name of album", 400);
-    }
-
-    if (!visibility) {
-      throw createError("Please provide visibility of album", 400);
-    }
-
     const album = await createAlbumService(name, visibility, userId.toString());
-    res
-      .status(201)
-      .json({ status: "success", accessToken: res.locals.token, data: album });
+    res.status(201).json({ status: "success", data: album });
   } catch (error) {
     next(error);
   }
@@ -49,14 +51,12 @@ export const getAllAlbums = async (
       req.query,
     );
     if (albums.length < 1) {
-      return res
-        .status(404)
-        .json({ message: "No albums found", accessToken: res.locals.token });
+      return res.status(404).json({ message: "No albums found" });
     }
 
     res.status(200).json({
       status: "success",
-      accessToken: res.locals.token,
+
       result: albums.length,
       data: albums,
     });
@@ -85,7 +85,7 @@ export const getSingleAlbum = async (
 
     res.status(200).json({
       status: "success",
-      accessToken: res.locals.token,
+
       data: { album },
     });
   } catch (error) {
@@ -99,17 +99,23 @@ export const updateSingleAlbum = async (
   next: NextFunction,
 ) => {
   try {
+    const parsed = updateAlbumSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const errorMessages = parsed.error.issues
+        .map((err: any) => err.message)
+        .join(", ");
+      throw createError(errorMessages, 400);
+    }
     const { albumId } = req.params;
     if (!albumId) {
       throw createError("No album ID provided", 400);
     }
+
     const userId = req.params.userId || req.currentUser._id.toString();
-    const { name } = req.body;
+    const { name } = parsed.data;
     const album = await updateSingleAlbumService(albumId, userId, name);
 
-    res
-      .status(200)
-      .json({ status: "success", accessToken: res.locals.token, data: album });
+    res.status(200).json({ status: "success", data: album });
   } catch (error) {
     next(error);
   }
@@ -125,11 +131,11 @@ export const deleteSingleAlbum = async (
     if (!albumId) {
       throw createError("Invalid album ID", 400);
     }
+
     const userId = req.params.userId || req.currentUser._id.toString();
     await deleteSingleAlbumService(albumId, userId);
     res.status(200).json({
       status: "success",
-      accessToken: res.locals.token,
     });
   } catch (error) {
     next(error);
@@ -143,20 +149,21 @@ export const addPhotoToAlbum = async (
 ) => {
   try {
     const { albumId } = req.params;
-
     if (!albumId) {
-      throw createError("Invalid album ID", 400);
+      throw createError("No album ID provided", 400);
+    }
+
+    const parsed = albumPhotosSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const errorMessages = parsed.error.issues
+        .map((err: any) => err.message)
+        .join(", ");
+      throw createError(errorMessages, 400);
     }
     const userId = req.currentUser._id.toString();
-    const { photoIds } = req.body;
-    if (!photoIds) {
-      throw createError("No photo ID provided", 400);
-    }
-
+    const { photoIds } = parsed.data;
     const album = await addPhotosToAlbumService(albumId, userId, photoIds);
-    res
-      .status(200)
-      .json({ status: "success", accessToken: res.locals.token, data: album });
+    res.status(200).json({ status: "success", data: album });
   } catch (error) {
     next(error);
   }
@@ -169,18 +176,20 @@ export const removePhotosFromAlbum = async (
 ) => {
   try {
     const { albumId } = req.params;
-
     if (!albumId) {
-      throw createError("Invalid album ID", 400);
+      throw createError("No album ID provided", 400);
+    }
+
+    const parsed = albumPhotosSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const errorMessages = parsed.error.issues
+        .map((err: any) => err.message)
+        .join(", ");
+      throw createError(errorMessages, 400);
     }
 
     const userId = req.currentUser._id.toString();
-    const { photoIds } = req.body;
-
-    if (!photoIds) {
-      throw createError("No photo IDs provided", 400);
-    }
-
+    const { photoIds } = parsed.data;
     const result = await removePhotosFromAlbumService(
       albumId,
       userId,
@@ -189,7 +198,7 @@ export const removePhotosFromAlbum = async (
 
     res.status(200).json({
       status: "success",
-      accessToken: res.locals.token,
+
       data: result,
     });
   } catch (error) {

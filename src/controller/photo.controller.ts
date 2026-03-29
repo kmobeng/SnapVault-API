@@ -57,7 +57,7 @@ export const uploadPhoto = async (
 
     res.status(201).json({
       status: "success",
-      accessToken: res.locals.token,
+
       data: { photo: photoResult },
     });
   } catch (error) {
@@ -87,13 +87,11 @@ export const getAllPhotos = async (
     );
 
     if (photos.length === 0) {
-      return res
-        .status(200)
-        .json({ message: "No photos found", accessToken: res.locals.token });
+      return res.status(200).json({ message: "No photos found" });
     }
     res.status(200).json({
       status: "success",
-      accessToken: res.locals.token,
+
       result: photos.length,
       data: { photos },
     });
@@ -121,7 +119,7 @@ export const getSinglePhoto = async (
 
     res.status(200).json({
       status: "success",
-      accessToken: res.locals.token,
+
       data: photo,
     });
   } catch (error) {
@@ -159,7 +157,7 @@ export const updatePhoto = async (
 
     res.status(200).json({
       status: "success",
-      accessToken: res.locals.token,
+
       data: photo,
     });
   } catch (error) {
@@ -182,7 +180,6 @@ export const deletePhoto = async (
 
     res.status(200).json({
       status: "success",
-      accessToken: res.locals.token,
     });
   } catch (error) {
     next(error);
@@ -204,7 +201,6 @@ export const softDeletePhoto = async (
 
     res.status(200).json({
       status: "success",
-      accessToken: res.locals.token,
     });
   } catch (error) {
     next(error);
@@ -229,7 +225,7 @@ export const restorePhoto = async (
 
     res.status(200).json({
       status: "success",
-      accessToken: res.locals.token,
+
       data: photo,
     });
   } catch (error) {
@@ -249,12 +245,11 @@ export const viewdeletedPhotos = async (
     if (photos.length === 0) {
       return res.status(200).json({
         message: "No deleted photos found",
-        accessToken: res.locals.token,
       });
     }
     res.status(200).json({
       status: "success",
-      accessToken: res.locals.token,
+
       result: photos.length,
       data: { photos },
     });

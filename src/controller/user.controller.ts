@@ -7,6 +7,10 @@ import {
   updateMeService,
 } from "../services/user.service";
 import { createError } from "../utils/error.util";
+import {
+  changePasswordSchema,
+  updateMeSchema,
+} from "../validators/user.validator";
 
 export const getAllUsers = async (
   req: Request,
@@ -17,7 +21,7 @@ export const getAllUsers = async (
     const users = await getAllUsersService(req.query);
     res.status(200).json({
       status: "success",
-      accessToken: res.locals.token,
+
       result: users.length,
       data: users,
     });
@@ -34,16 +38,14 @@ export const getSingleUser = async (
   try {
     const { userId } = req.params;
     if (!userId) {
-      throw createError("No user Id provided", 400);
+      throw createError("No user ID provided", 400);
     }
-    const user = await getSingleUserService(userId.toString());
-    res
-      .status(200)
-      .json({
-        status: "success",
-        accessToken: res.locals.token,
-        data: user,
-      });
+    const user = await getSingleUserService(userId);
+    res.status(200).json({
+      status: "success",
+
+      data: user,
+    });
   } catch (error) {
     next(error);
   }
@@ -64,15 +66,21 @@ export const updateMe = async (
   next: NextFunction,
 ) => {
   try {
-    const { name } = req.body;
+    const parsed = updateMeSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const errorMessages = parsed.error.issues
+        .map((err: any) => err.message)
+        .join(", ");
+      throw createError(errorMessages, 400);
+    }
+
+    const { name } = parsed.data;
     const user = await updateMeService(req.currentUser._id.toString(), name);
-    res
-      .status(200)
-      .json({
-        status: "success",
-        accessToken: res.locals.token,
-        data: user,
-      });
+    res.status(200).json({
+      status: "success",
+
+      data: user,
+    });
   } catch (error) {
     next(error);
   }
@@ -89,12 +97,9 @@ export const deleteUser = async (
       throw createError("No user ID provided", 400);
     }
     const user = await deleteUserService(userId.toString());
-    res
-      .status(200)
-      .json({
-        status: "success",
-        accessToken: res.locals.token,
-      });
+    res.status(200).json({
+      status: "success",
+    });
   } catch (error) {
     next(error);
   }
@@ -106,20 +111,18 @@ export const changePassword = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const { currentPassword, newPassword, newPasswordConfirm } = req.body;
-
-    if (req.currentUser.needToChangePassword == false && !currentPassword) {
-      throw createError(
-        "Please provide current password,new password and confirm password to continue",
-        400,
-      );
+    const parsed = changePasswordSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const errorMessages = parsed.error.issues
+        .map((err: any) => err.message)
+        .join(", ");
+      throw createError(errorMessages, 400);
     }
 
-    if (!newPassword || !newPasswordConfirm) {
-      throw createError(
-        "Please provide new password and confirm password to continue",
-        400,
-      );
+    const { currentPassword, newPassword, newPasswordConfirm } = parsed.data;
+
+    if (!req.currentUser.needToChangePassword && !currentPassword) {
+      throw createError("Please provide current password to continue", 400);
     }
 
     const result = await changePasswordService(
@@ -131,7 +134,7 @@ export const changePassword = async (
 
     res.status(200).json({
       status: "success",
-      accessToken: res.locals.token,
+
       message: "Password changed successfully",
     });
   } catch (error) {
