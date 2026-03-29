@@ -1,5 +1,7 @@
 **Live API URL:** [https://snapvault-api.up.railway.app/](https://snapvault-api.up.railway.app/)
 
+**Interactive API Docs:** [Swagger UI](https://snapvault-api.up.railway.app/api/docs)
+
 # SnapVault
 
 A secure RESTful API for storing and managing photos and albums. Built with Node.js, Express, TypeScript, MongoDB, and Redis.
@@ -22,6 +24,7 @@ A secure RESTful API for storing and managing photos and albums. Built with Node
 - Input validation with Zod schemas for request bodies across all endpoints
 - Redis caching for list/detail reads with SCAN-based cache invalidation on writes
 - Security middleware: Helmet, CORS, and route-level rate limiting
+- Interactive API documentation with Swagger (OpenAPI 3.0)
 - Structured request logging with Morgan + Winston
 
 ## Tech Stack
@@ -36,6 +39,7 @@ A secure RESTful API for storing and managing photos and albums. Built with Node
 | Storage    | Cloudinary                          |
 | Auth       | JWT, Passport.js (Google OAuth 2.0) |
 | Email      | Nodemailer                          |
+| Docs       | Swagger UI (OpenAPI 3.0)            |
 | Logging    | Winston, Morgan                     |
 
 ## Getting Started
@@ -153,6 +157,7 @@ Base URL: /api
 | GET    | /google/redirect       | Google OAuth callback                            | Public                        |
 | POST   | /verify-email          | Verify email with token in body                  | Auth required                 |
 | POST   | /verify-email/request  | Request a new email verification token           | Auth required                 |
+| POST   | /logout                | Logout and clear session                         | Auth required                 |
 
 Notes:
 
@@ -238,6 +243,7 @@ Global middleware: protect, isEmailVerified, needToChangePassword, apiLimiter
 - PATCH /album/:albumId
 - DELETE /album/:albumId
 - PATCH /album/:albumId/addPhotos
+- DELETE /album/:albumId/removePhotos
 - GET /:userId/album
 - GET /:userId/album/:albumId
 
@@ -282,6 +288,7 @@ Response shape for `PATCH /album/:albumId/addPhotos`:
 ## Project Structure
 
 ```text
+swagger.yaml
 src/
   app.ts
   server.ts

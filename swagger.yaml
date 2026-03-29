@@ -1,0 +1,1277 @@
+openapi: 3.0.3
+info:
+  title: SnapVault API
+  description: A secure RESTful API for storing and managing photos and albums.
+  version: 1.0.0
+
+servers:
+  - url: https://snapvault-api.up.railway.app
+    description: Production
+  - url: http://localhost:4000
+    description: Development
+
+tags:
+  - name: Auth
+    description: Authentication and account management
+  - name: User
+    description: User profile and admin user management
+  - name: Photo
+    description: Photo upload, retrieval, and lifecycle
+  - name: Album
+    description: Album management and photo-album relations
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: accessToken
+      description: HttpOnly cookie set on login/signup
+
+  schemas:
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 665a1b2c3d4e5f6a7b8c9d0e
+        name:
+          type: string
+          example: John Doe
+        email:
+          type: string
+          format: email
+          example: john@example.com
+        role:
+          type: string
+          enum: [user, admin]
+        provider:
+          type: string
+          enum: [local, google]
+        needToChangePassword:
+          type: boolean
+        isEmailVerified:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    Photo:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 665a1b2c3d4e5f6a7b8c9d0e
+        title:
+          type: string
+          example: Sunset at the beach
+        description:
+          type: string
+          example: A beautiful sunset
+        visibility:
+          type: string
+          enum: [public, private]
+        url:
+          type: string
+          format: uri
+        publicId:
+          type: string
+        user:
+          type: string
+          example: 665a1b2c3d4e5f6a7b8c9d0e
+        createdAt:
+          type: string
+          format: date-time
+        isDeleted:
+          type: boolean
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    Album:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 665a1b2c3d4e5f6a7b8c9d0e
+        name:
+          type: string
+          example: Vacation 2026
+        visibility:
+          type: string
+          enum: [public, private]
+        user:
+          type: string
+          example: 665a1b2c3d4e5f6a7b8c9d0e
+        createdAt:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+
+  parameters:
+    photoId:
+      name: photoId
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^[0-9a-fA-F]{24}$
+      description: MongoDB ObjectId of the photo
+    albumId:
+      name: albumId
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^[0-9a-fA-F]{24}$
+      description: MongoDB ObjectId of the album
+    userId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^[0-9a-fA-F]{24}$
+      description: MongoDB ObjectId of the user
+    page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 10
+    sort:
+      name: sort
+      in: query
+      schema:
+        type: string
+      description: Comma-separated fields (prefix with - for descending)
+    fields:
+      name: fields
+      in: query
+      schema:
+        type: string
+      description: Comma-separated fields to include in response
+
+security:
+  - cookieAuth: []
+
+paths:
+  # ──────────────────────────── Auth ────────────────────────────
+
+  /api/auth/signup:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, passwordConfirm]
+              properties:
+                name:
+                  type: string
+                  example: John Doe
+                email:
+                  type: string
+                  format: email
+                  example: john@example.com
+                password:
+                  type: string
+                  minLength: 8
+                  example: password123
+                passwordConfirm:
+                  type: string
+                  minLength: 8
+                  example: password123
+      responses:
+        "201":
+          description: User created successfully
+          headers:
+            Set-Cookie:
+              description: accessToken and refreshToken HttpOnly cookies
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: "#/components/schemas/User"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login with email and password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+      responses:
+        "200":
+          description: Login successful
+          headers:
+            Set-Cookie:
+              description: accessToken and refreshToken HttpOnly cookies
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: "#/components/schemas/User"
+        "400":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/auth/forgot-password:
+    post:
+      tags: [Auth]
+      summary: Send password reset email
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        "200":
+          description: Reset email sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/auth/reset-password/{token}:
+    post:
+      tags: [Auth]
+      summary: Reset password using token from email
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password, passwordConfirm]
+              properties:
+                password:
+                  type: string
+                  minLength: 8
+                passwordConfirm:
+                  type: string
+                  minLength: 8
+      responses:
+        "200":
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+        "400":
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/auth/google:
+    get:
+      tags: [Auth]
+      summary: Start Google OAuth flow
+      security: []
+      responses:
+        "302":
+          description: Redirects to Google consent screen
+
+  /api/auth/google/redirect:
+    get:
+      tags: [Auth]
+      summary: Google OAuth callback
+      security: []
+      responses:
+        "302":
+          description: Redirects to client with session cookies
+
+  /api/auth/verify-email:
+    post:
+      tags: [Auth]
+      summary: Verify email with token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [emailToken]
+              properties:
+                emailToken:
+                  type: string
+                  example: "123456"
+      responses:
+        "200":
+          description: Email verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+        "400":
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/auth/verify-email/request:
+    post:
+      tags: [Auth]
+      summary: Request a new email verification token
+      responses:
+        "200":
+          description: Verification email sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout and clear session
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+
+  # ──────────────────────────── User ────────────────────────────
+
+  /api/user/change-password:
+    patch:
+      tags: [User]
+      summary: Change password
+      description: Requires currentPassword unless user has needToChangePassword set (e.g. Google OAuth first login).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [newPassword, newPasswordConfirm]
+              properties:
+                currentPassword:
+                  type: string
+                  description: Required unless needToChangePassword is true
+                newPassword:
+                  type: string
+                  minLength: 8
+                newPasswordConfirm:
+                  type: string
+                  minLength: 8
+      responses:
+        "200":
+          description: Password changed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Password changed successfully
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/user/me:
+    get:
+      tags: [User]
+      summary: Get current user profile
+      responses:
+        "200":
+          description: Current user data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: "#/components/schemas/User"
+
+  /api/user/update-me:
+    patch:
+      tags: [User]
+      summary: Update current user name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  example: Jane Doe
+      responses:
+        "200":
+          description: User updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: "#/components/schemas/User"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/user:
+    get:
+      tags: [User]
+      summary: Get all users (admin only)
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/sort"
+        - $ref: "#/components/parameters/fields"
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  result:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+
+  /api/user/{userId}:
+    get:
+      tags: [User]
+      summary: Get a single user (admin only)
+      parameters:
+        - $ref: "#/components/parameters/userId"
+      responses:
+        "200":
+          description: User data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: "#/components/schemas/User"
+        "400":
+          description: Invalid user ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      tags: [User]
+      summary: Delete a user (admin only)
+      parameters:
+        - $ref: "#/components/parameters/userId"
+      responses:
+        "200":
+          description: User deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  # ──────────────────────────── Photo ────────────────────────────
+
+  /api/photo:
+    post:
+      tags: [Photo]
+      summary: Upload one or more photos
+      description: Send up to 10 files using the repeated field name `photo`. Files are compressed server-side before Cloudinary upload.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [title, description, photo]
+              properties:
+                photo:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  maxItems: 10
+                title:
+                  type: string
+                description:
+                  type: string
+                visibility:
+                  type: string
+                  enum: [public, private]
+                  default: public
+      responses:
+        "201":
+          description: Photo(s) uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      photo:
+                        oneOf:
+                          - $ref: "#/components/schemas/Photo"
+                          - type: array
+                            items:
+                              $ref: "#/components/schemas/Photo"
+        "400":
+          description: Validation error or no file provided
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    get:
+      tags: [Photo]
+      summary: Get all photos for the current user
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/sort"
+        - $ref: "#/components/parameters/fields"
+      responses:
+        "200":
+          description: List of photos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  result:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      photos:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Photo"
+
+  /api/photo/trash:
+    get:
+      tags: [Photo]
+      summary: List soft-deleted photos
+      responses:
+        "200":
+          description: Deleted photos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  result:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      photos:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Photo"
+
+  /api/photo/{photoId}/restore:
+    patch:
+      tags: [Photo]
+      summary: Restore a soft-deleted photo
+      parameters:
+        - $ref: "#/components/parameters/photoId"
+      responses:
+        "200":
+          description: Photo restored
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: "#/components/schemas/Photo"
+        "404":
+          description: Photo not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/photo/{photoId}/permanent:
+    delete:
+      tags: [Photo]
+      summary: Permanently delete a photo
+      description: Removes the photo from DB and Cloudinary. Available to admin and photo owner.
+      parameters:
+        - $ref: "#/components/parameters/photoId"
+      responses:
+        "200":
+          description: Photo permanently deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+        "404":
+          description: Photo not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/photo/{photoId}:
+    get:
+      tags: [Photo]
+      summary: Get a single photo
+      parameters:
+        - $ref: "#/components/parameters/photoId"
+      responses:
+        "200":
+          description: Photo data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: "#/components/schemas/Photo"
+        "404":
+          description: Photo not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    patch:
+      tags: [Photo]
+      summary: Update photo metadata
+      parameters:
+        - $ref: "#/components/parameters/photoId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                visibility:
+                  type: string
+                  enum: [public, private]
+      responses:
+        "200":
+          description: Photo updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: "#/components/schemas/Photo"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      tags: [Photo]
+      summary: Soft-delete a photo
+      parameters:
+        - $ref: "#/components/parameters/photoId"
+      responses:
+        "200":
+          description: Photo soft-deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+        "404":
+          description: Photo not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/{userId}/photo:
+    get:
+      tags: [Photo]
+      summary: Get all photos for a specific user
+      description: Returns only public photos if requester is not the owner.
+      parameters:
+        - $ref: "#/components/parameters/userId"
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/sort"
+        - $ref: "#/components/parameters/fields"
+      responses:
+        "200":
+          description: List of photos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  result:
+                    type: integer
+                  data:
+                    type: object
+                    properties:
+                      photos:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Photo"
+
+  /api/{userId}/photo/{photoId}:
+    get:
+      tags: [Photo]
+      summary: Get a specific photo from a user
+      description: Returns the photo only if public or requester is the owner.
+      parameters:
+        - $ref: "#/components/parameters/userId"
+        - $ref: "#/components/parameters/photoId"
+      responses:
+        "200":
+          description: Photo data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: "#/components/schemas/Photo"
+        "404":
+          description: Photo not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  # ──────────────────────────── Album ────────────────────────────
+
+  /api/album:
+    post:
+      tags: [Album]
+      summary: Create a new album
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  example: Vacation 2026
+                visibility:
+                  type: string
+                  enum: [public, private]
+                  default: private
+      responses:
+        "201":
+          description: Album created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: "#/components/schemas/Album"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    get:
+      tags: [Album]
+      summary: Get all albums for the current user
+      parameters:
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/sort"
+        - $ref: "#/components/parameters/fields"
+      responses:
+        "200":
+          description: List of albums
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  result:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Album"
+        "404":
+          description: No albums found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: No albums found
+
+  /api/album/{albumId}:
+    get:
+      tags: [Album]
+      summary: Get a single album with its photos
+      parameters:
+        - $ref: "#/components/parameters/albumId"
+      responses:
+        "200":
+          description: Album with photos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      album:
+                        allOf:
+                          - $ref: "#/components/schemas/Album"
+                          - type: object
+                            properties:
+                              photos:
+                                type: array
+                                items:
+                                  $ref: "#/components/schemas/Photo"
+        "404":
+          description: Album not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    patch:
+      tags: [Album]
+      summary: Update album name
+      parameters:
+        - $ref: "#/components/parameters/albumId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+      responses:
+        "200":
+          description: Album updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: "#/components/schemas/Album"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      tags: [Album]
+      summary: Delete an album
+      parameters:
+        - $ref: "#/components/parameters/albumId"
+      responses:
+        "200":
+          description: Album deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+        "400":
+          description: Invalid album ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/album/{albumId}/addPhotos:
+    patch:
+      tags: [Album]
+      summary: Add photos to an album
+      description: Duplicate photos already in the album are silently ignored.
+      parameters:
+        - $ref: "#/components/parameters/albumId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [photoIds]
+              properties:
+                photoIds:
+                  type: array
+                  items:
+                    type: string
+                    pattern: ^[0-9a-fA-F]{24}$
+                  minItems: 1
+                  example: ["665a1b2c3d4e5f6a7b8c9d0e", "665a1b2c3d4e5f6a7b8c9d0f"]
+      responses:
+        "200":
+          description: Photos added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      album:
+                        $ref: "#/components/schemas/Album"
+                      stats:
+                        type: object
+                        properties:
+                          totalRequested:
+                            type: integer
+                          inserted:
+                            type: integer
+                          alreadyInAlbum:
+                            type: integer
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Photos do not belong to user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/album/{albumId}/removePhotos:
+    delete:
+      tags: [Album]
+      summary: Remove photos from an album
+      parameters:
+        - $ref: "#/components/parameters/albumId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [photoIds]
+              properties:
+                photoIds:
+                  type: array
+                  items:
+                    type: string
+                    pattern: ^[0-9a-fA-F]{24}$
+                  minItems: 1
+      responses:
+        "200":
+          description: Photos removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      albumId:
+                        type: string
+                      totalRequested:
+                        type: integer
+                      removed:
+                        type: integer
+                      notFound:
+                        type: integer
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/{userId}/album:
+    get:
+      tags: [Album]
+      summary: Get all albums for a specific user
+      description: Returns only public albums if requester is not the owner.
+      parameters:
+        - $ref: "#/components/parameters/userId"
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/sort"
+        - $ref: "#/components/parameters/fields"
+      responses:
+        "200":
+          description: List of albums
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  result:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Album"
+
+  /api/{userId}/album/{albumId}:
+    get:
+      tags: [Album]
+      summary: Get a specific album from a user
+      description: Returns the album only if public or requester is the owner.
+      parameters:
+        - $ref: "#/components/parameters/userId"
+        - $ref: "#/components/parameters/albumId"
+      responses:
+        "200":
+          description: Album with photos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      album:
+                        allOf:
+                          - $ref: "#/components/schemas/Album"
+                          - type: object
+                            properties:
+                              photos:
+                                type: array
+                                items:
+                                  $ref: "#/components/schemas/Photo"
+        "404":
+          description: Album not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"

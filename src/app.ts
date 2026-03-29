@@ -14,6 +14,9 @@ import cookieParser from "cookie-parser";
 import mongoSanitize from "express-mongo-sanitize";
 import { xss } from "express-xss-sanitizer";
 import hpp from "hpp";
+import swaggerUi from "swagger-ui-express";
+import YAML from "yamljs";
+import path from "path";
 
 const app = express();
 app.set("trust proxy", 1);
@@ -62,6 +65,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 app.use(passport.initialize());
 app.use(passport.session());
+
+const swaggerDocument = YAML.load(path.join(__dirname, "../swagger.yaml"));
+app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.get("/", (_req: Request, res: Response) => {
   res.status(200).json({
