@@ -3,6 +3,7 @@ import { RedisClient } from "../config/db.config";
 import User, { IUser } from "../model/user.model";
 import { createError } from "../utils/error.util";
 import APIFeatures from "../utils/APIFeatures.util";
+import { invalidateUserCache, invalidateUsersCache } from "../utils/redis.util";
 
 export const getAllUsersService = async (queryString: any) => {
   const normalizedQuery = Object.keys(queryString)
@@ -55,8 +56,6 @@ export const getSingleUserService = async (userId: string) => {
 };
 
 export const updateMeService = async (userId: string, name: string) => {
-  const userKey = `user:${userId}`;
-  const usersKeyPrefix = `users:all:`;
   try {
     const user = await User.findByIdAndUpdate(
       userId,
@@ -70,11 +69,8 @@ export const updateMeService = async (userId: string, name: string) => {
       throw createError("Unable to update user", 404);
     }
 
-    await RedisClient.del(userKey);
-    const usersCacheKeys = await RedisClient.keys(`${usersKeyPrefix}*`);
-    if (usersCacheKeys.length > 0) {
-      await RedisClient.del(...usersCacheKeys);
-    }
+    await invalidateUserCache(userId);
+    await invalidateUsersCache();
     return user;
   } catch (error) {
     throw error;
@@ -82,19 +78,14 @@ export const updateMeService = async (userId: string, name: string) => {
 };
 
 export const deleteUserService = async (userId: string) => {
-  const userKey = `user:${userId}`;
-  const usersKeyPrefix = `users:all:`;
   try {
     const user = await User.findByIdAndDelete(userId);
     if (!user) {
       throw createError("No user found", 404);
     }
 
-    await RedisClient.del(userKey);
-    const usersCacheKeys = await RedisClient.keys(`${usersKeyPrefix}*`);
-    if (usersCacheKeys.length > 0) {
-      await RedisClient.del(...usersCacheKeys);
-    }
+    await invalidateUserCache(userId);
+    await invalidateUsersCache();
     return user;
   } catch (error) {
     throw error;

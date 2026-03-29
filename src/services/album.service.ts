@@ -5,43 +5,12 @@ import APIFeatures from "../utils/APIFeatures.util";
 import mongoose from "mongoose";
 import PhotoAlbum from "../model/photoAlbum.model";
 import Photo from "../model/photo.model";
+import {
+  invalidateAlbumCache,
+  invalidateAlbumsCache,
+} from "../utils/redis.util";
 
-const getAlbumsCacheIndexKey = (userId: string) => `albums:index:${userId}`;
-const getAlbumCacheIndexKey = (albumId: string) => `album:index:${albumId}`;
-
-const trackAlbumsCacheKey = async (userId: string, cacheKey: string) => {
-  await RedisClient.sadd(getAlbumsCacheIndexKey(userId), cacheKey);
-};
-
-const trackAlbumCacheKey = async (albumId: string, cacheKey: string) => {
-  await RedisClient.sadd(getAlbumCacheIndexKey(albumId), cacheKey);
-};
-
-const invalidateAlbumsCache = async (userId: string) => {
-  const indexKey = getAlbumsCacheIndexKey(userId);
-  const cachedKeys = await RedisClient.smembers(indexKey);
-
-  if (cachedKeys.length !== 0) {
-    await RedisClient.del(...cachedKeys);
-  }
-
-  await RedisClient.del(indexKey);
-};
-
-const invalidateAlbumCache = async (albumId: string) => {
-  const indexKey = getAlbumCacheIndexKey(albumId);
-  const cachedKeys = await RedisClient.smembers(indexKey);
-
-  if (cachedKeys.length !== 0) {
-    await RedisClient.del(...cachedKeys);
-  }
-
-  await RedisClient.del(indexKey);
-};
-
-export const invalidateSingleAlbumCacheService = async (albumId: string) => {
-  await invalidateAlbumCache(albumId);
-};
+export const invalidateSingleAlbumCacheService = invalidateAlbumCache;
 
 export const createAlbumService = async (
   name: string,
@@ -96,7 +65,6 @@ export const getAllAlbumsService = async (
     const albums = await features.query.lean();
 
     await RedisClient.setex(albumsKey, 3600, JSON.stringify(albums));
-    await trackAlbumsCacheKey(userId, albumsKey);
 
     return albums;
   } catch (error) {
@@ -180,7 +148,6 @@ export const getSingleAlbumService = async (
     };
 
     await RedisClient.setex(albumKey, 3600, JSON.stringify(hydratedAlbum));
-    await trackAlbumCacheKey(albumId, albumKey);
 
     return hydratedAlbum;
   } catch (error) {

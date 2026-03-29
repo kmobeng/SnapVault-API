@@ -6,47 +6,12 @@ import { cloudinary, RedisClient } from "../config/db.config";
 import APIFeatures from "../utils/APIFeatures.util";
 import logger from "../config/wiston.config";
 import PhotoAlbum from "../model/photoAlbum.model";
-import { invalidateSingleAlbumCacheService } from "./album.service";
-
-const getPhotosCacheIndexKey = (userId: string) => `photos:index:${userId}`;
-
-const trackPhotosCacheKey = async (userId: string, cacheKey: string) => {
-  await RedisClient.sadd(getPhotosCacheIndexKey(userId), cacheKey);
-};
-
-const invalidatePhotosCache = async (userId: string) => {
-  const indexKey = getPhotosCacheIndexKey(userId);
-  const cachedKeys = await RedisClient.smembers(indexKey);
-
-  if (cachedKeys.length > 0) {
-    await RedisClient.del(...cachedKeys);
-  }
-
-  await RedisClient.del(indexKey);
-};
-
-const getPhotoCacheKeys = (photoId: string) => [
-  `photo:${photoId}:owner`,
-  `photo:${photoId}:public`,
-];
-
-const invalidateSinglePhotoCache = async (photoId: string) => {
-  await RedisClient.del(...getPhotoCacheKeys(photoId));
-};
-
-const invalidateAlbumCachesForPhoto = async (photoId: string) => {
-  const albumIds = await PhotoAlbum.distinct("album", { photo: photoId });
-
-  if (albumIds.length === 0) {
-    return;
-  }
-
-  await Promise.all(
-    albumIds.map((albumId) =>
-      invalidateSingleAlbumCacheService(String(albumId)),
-    ),
-  );
-};
+import {
+  invalidateAlbumCache,
+  invalidateAlbumCachesForPhoto,
+  invalidatePhotosCache,
+  invalidateSinglePhotoCache,
+} from "../utils/redis.util";
 
 const uploadCompressedPhotoToCloudinary = async (buffer: Buffer) => {
   const compressedBuffer = await sharp(buffer)
@@ -208,7 +173,6 @@ export const getAllPhotosService = async (
     const photos = await features.query;
 
     await RedisClient.setex(photosKey, 3600, JSON.stringify(photos));
-    await trackPhotosCacheKey(userId, photosKey);
 
     return photos;
   } catch (error) {
@@ -345,7 +309,7 @@ export const deletePhotoService = async (
 
     await Promise.all(
       albumIds.map((albumId) =>
-        invalidateSingleAlbumCacheService(String(albumId)),
+        invalidateAlbumCache(String(albumId)),
       ),
     );
 

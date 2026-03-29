@@ -142,10 +142,8 @@ export const updatePhoto = async (
         .join(", ");
       throw createError(errorMessages, 400);
     }
-    const { title, visibility, description } = parsed.data;
-    if (!title || !visibility || !description) {
-      throw createError("All fields are required", 400);
-    }
+    const { title, visibility, description } = req.body;
+
     const { photoId } = req.params;
     if (!photoId) {
       throw createError("No photoId provided", 400);

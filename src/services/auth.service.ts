@@ -1,6 +1,6 @@
-import { RedisClient } from "../config/db.config";
 import User from "../model/user.model";
 import { createError } from "../utils/error.util";
+import { invalidateUsersCache } from "../utils/redis.util";
 
 export const signUpService = async (
   name: string,
@@ -9,7 +9,6 @@ export const signUpService = async (
   passwordConfirm: string,
 ) => {
   try {
-    const usersKey = `users:all`;
     const user = await User.create({
       name,
       email,
@@ -19,7 +18,7 @@ export const signUpService = async (
     if (!user) {
       throw createError("Error while creating user", 400);
     }
-    await RedisClient.del(usersKey);
+    await invalidateUsersCache();
     return user;
   } catch (error) {
     throw error;
