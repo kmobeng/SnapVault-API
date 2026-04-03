@@ -1138,15 +1138,13 @@ paths:
                     properties:
                       album:
                         $ref: "#/components/schemas/Album"
-                      stats:
-                        type: object
-                        properties:
-                          totalRequested:
-                            type: integer
-                          inserted:
-                            type: integer
-                          alreadyInAlbum:
-                            type: integer
+                    example:
+                      album:
+                        _id: 665a1b2c3d4e5f6a7b8c9d0a
+                        name: Vacation 2026
+                        visibility: public
+                        user: 665a1b2c3d4e5f6a7b8c9d0b
+                        createdAt: 2026-04-03T10:30:00.000Z
         "400":
           description: Validation error
           content:
@@ -1155,6 +1153,12 @@ paths:
                 $ref: "#/components/schemas/Error"
         "403":
           description: Photos do not belong to user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Album not found
           content:
             application/json:
               schema:
@@ -1196,14 +1200,24 @@ paths:
                     properties:
                       albumId:
                         type: string
+                        example: 665a1b2c3d4e5f6a7b8c9d0a
                       totalRequested:
                         type: integer
+                        example: 3
                       removed:
                         type: integer
+                        example: 2
                       notFound:
                         type: integer
+                        example: 1
         "400":
           description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Album not found
           content:
             application/json:
               schema:

@@ -288,60 +288,28 @@ export const addPhotosToAlbumService = async (
       (id) => new mongoose.Types.ObjectId(id),
     );
 
-    const [validation] = await Album.aggregate<{
-      _id: mongoose.Types.ObjectId;
-      name: string;
-      visibility: "public" | "private";
-      user: mongoose.Types.ObjectId;
-      createdAt: Date;
-      ownedPhotosCount: number;
-    }>([
-      { $match: { _id: albumObjectId, user: userObjectId } },
-      { $limit: 1 },
-      {
-        $lookup: {
-          from: "photos",
-          let: { photoIds: uniquePhotoObjectIds, currentUserId: userObjectId },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [
-                    { $in: ["$_id", "$$photoIds"] },
-                    { $eq: ["$user", "$$currentUserId"] },
-                    { $eq: ["$isDeleted", false] },
-                  ],
-                },
-              },
-            },
-            { $count: "count" },
-          ],
-          as: "ownedPhotosMeta",
-        },
-      },
-      {
-        $project: {
-          _id: 1,
-          name: 1,
-          visibility: 1,
-          user: 1,
-          createdAt: 1,
-          ownedPhotosCount: {
-            $ifNull: [{ $arrayElemAt: ["$ownedPhotosMeta.count", 0] }, 0],
-          },
-        },
-      },
-    ]);
+    const album = await Album.findOne({
+      _id: albumObjectId,
+      user: userObjectId,
+    })
+      .select("_id name visibility user createdAt")
+      .lean();
 
-    if (!validation) {
+    if (!album) {
       throw createError("Album not found", 404);
     }
 
-    if (validation.ownedPhotosCount !== uniquePhotoIds.length) {
+    const ownedPhotosCount = await Photo.countDocuments({
+      _id: { $in: uniquePhotoObjectIds },
+      user: userObjectId,
+      isDeleted: false,
+    });
+
+    if (ownedPhotosCount !== uniquePhotoIds.length) {
       throw createError("One or more photos do not belong to this user", 403);
     }
 
-    const writeResult = await PhotoAlbum.bulkWrite(
+    await PhotoAlbum.bulkWrite(
       uniquePhotoObjectIds.map((photoObjectId) => ({
         updateOne: {
           filter: {
@@ -367,16 +335,11 @@ export const addPhotosToAlbumService = async (
 
     return {
       album: {
-        _id: validation._id,
-        name: validation.name,
-        visibility: validation.visibility,
-        user: validation.user,
-        createdAt: validation.createdAt,
-      },
-      stats: {
-        totalRequested: uniquePhotoIds.length,
-        inserted: writeResult.upsertedCount,
-        alreadyInAlbum: uniquePhotoIds.length - writeResult.upsertedCount,
+        _id: album._id,
+        name: album.name,
+        visibility: album.visibility,
+        user: album.user,
+        createdAt: album.createdAt,
       },
     };
   } catch (error) {
