@@ -13,6 +13,8 @@ const AlbumSchema = new Schema(
       enum: ["public", "private"],
       default: "private",
     },
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: Date,
     createdAt: { type: Date, default: Date.now },
   },
   {

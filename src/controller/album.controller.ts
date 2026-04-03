@@ -2,11 +2,14 @@ import { NextFunction, Request, Response } from "express";
 import {
   addPhotosToAlbumService,
   createAlbumService,
-  deleteSingleAlbumService,
+  deleteSingleAlbumPermanentlyService,
   getAllAlbumsService,
   removePhotosFromAlbumService,
+  restoreAlbumService,
   getSingleAlbumService,
   updateSingleAlbumService,
+  viewDeletedAlbumsService,
+  softDeleteAlbumService,
 } from "../services/album.service";
 import { createError } from "../utils/error.util";
 import {
@@ -121,7 +124,7 @@ export const updateSingleAlbum = async (
   }
 };
 
-export const deleteSingleAlbum = async (
+export const permanentlyDeleteSingleAlbum = async (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -133,7 +136,7 @@ export const deleteSingleAlbum = async (
     }
 
     const userId = req.params.userId || req.currentUser._id.toString();
-    await deleteSingleAlbumService(albumId, userId);
+    await deleteSingleAlbumPermanentlyService(albumId, userId);
     res.status(200).json({
       status: "success",
     });
@@ -200,6 +203,73 @@ export const removePhotosFromAlbum = async (
       status: "success",
 
       data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const viewDeletedAlbums = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.currentUser._id.toString();
+    const albums = await viewDeletedAlbumsService(userId);
+    if (albums.length < 1) {
+      return res.status(404).json({ message: "No deleted albums found" });
+    }
+
+    res.status(200).json({
+      status: "success",
+      result: albums.length,
+      data: albums,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const softDeleteAlbum = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { albumId } = req.params;
+    if (!albumId) {
+      throw createError("No album ID provided", 400);
+    }
+
+    const userId = req.currentUser._id.toString();
+    await softDeleteAlbumService(albumId, userId);
+
+    res.status(200).json({
+      status: "success",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const restoreSingleAlbum = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { albumId } = req.params;
+    if (!albumId) {
+      throw createError("No album ID provided", 400);
+    }
+
+    const userId = req.currentUser._id.toString();
+    const album = await restoreAlbumService(albumId, userId);
+
+    res.status(200).json({
+      status: "success",
+      data: album,
     });
   } catch (error) {
     next(error);

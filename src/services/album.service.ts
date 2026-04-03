@@ -52,9 +52,9 @@ export const getAllAlbumsService = async (
     let query: any;
 
     if (user === userId) {
-      query = { user: userId };
+      query = { user: userId, isDeleted: false };
     } else {
-      query = { user: userId, visibility: "public" };
+      query = { user: userId, visibility: "public",isDeleted: false };
     }
 
     const features = new APIFeatures(Album.find(query), queryString)
@@ -99,9 +99,10 @@ export const getSingleAlbumService = async (
       throw createError("Invalid album ID", 400);
     }
 
-    const query: { _id: string; user: string; visibility?: "public" } = {
+    const query: { _id: string; user: string;isDeleted: boolean; visibility?: "public" } = {
       _id: albumId,
       user: userId,
+      isDeleted: false,
     };
     const isOwner = user === userId;
 
@@ -175,7 +176,7 @@ export const removePhotosFromAlbumService = async (
       }
     }
 
-    const albumExists = await Album.exists({ _id: albumId, user: userId });
+    const albumExists = await Album.exists({ _id: albumId, user: userId,isDeleted: false });
 
     if (!albumExists) {
       throw createError("Album not found", 404);
@@ -214,7 +215,7 @@ export const updateSingleAlbumService = async (
     }
 
     const album = await Album.findOneAndUpdate(
-      { _id: albumId, user: userId },
+      { _id: albumId, user: userId,isDeleted: false },
       { $set: { name } },
       { new: true, runValidators: true },
     );
@@ -230,7 +231,7 @@ export const updateSingleAlbumService = async (
   }
 };
 
-export const deleteSingleAlbumService = async (
+export const deleteSingleAlbumPermanentlyService = async (
   albumId: string,
   userId: string,
 ) => {
@@ -245,6 +246,7 @@ export const deleteSingleAlbumService = async (
     const album = await Album.findOneAndDelete({
       _id: albumId,
       user: userId,
+      isDeleted: true,
     });
     if (!album) {
       throw createError("Unable to delete album", 400);
@@ -291,6 +293,7 @@ export const addPhotosToAlbumService = async (
     const album = await Album.findOne({
       _id: albumObjectId,
       user: userObjectId,
+      isDeleted: false,
     })
       .select("_id name visibility user createdAt")
       .lean();
@@ -346,3 +349,61 @@ export const addPhotosToAlbumService = async (
     throw error;
   }
 };
+
+export const softDeleteAlbumService = async (albumId: string, userId: string) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(albumId)) {
+      throw createError("Invalid album ID", 400);
+    }
+
+    const album = await Album.findOneAndUpdate(
+      { _id: albumId, user: userId, isDeleted: false },
+      { $set: { isDeleted: true, deletedAt: new Date() } },
+      { new: true },
+    );
+
+    if (!album) {
+      throw createError("No album found", 404);
+    }
+    await invalidateAlbumsCache(userId);
+    await invalidateAlbumCache(albumId);
+
+    return album;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const restoreAlbumService = async (albumId: string, userId: string) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(albumId)) {
+      throw createError("Invalid album ID", 400);
+    }
+    const album = await Album.findOneAndUpdate(
+      { _id: albumId, user: userId, isDeleted: true },
+      { $set: { isDeleted: false, deletedAt: null } },
+      { new: true },
+    );
+    if (!album) {
+      throw createError("No album found", 404);
+    }
+
+    await invalidateAlbumsCache(userId);
+    await invalidateAlbumCache(albumId);
+    
+    return album;
+  }catch(error){
+    throw error
+  }
+}
+
+export const viewDeletedAlbumsService = async (userId: string )=>{
+  try {
+    const albums = await Album.find({ user: userId, isDeleted: true })
+      .select("_id name visibility user createdAt deletedAt")
+      .lean();
+    return albums;
+  } catch (error) {
+    throw error;
+  }
+}
