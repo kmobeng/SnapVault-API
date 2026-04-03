@@ -107,6 +107,12 @@ components:
         createdAt:
           type: string
           format: date-time
+        isDeleted:
+          type: boolean
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
 
     Error:
       type: object
@@ -1079,12 +1085,12 @@ paths:
                 $ref: "#/components/schemas/Error"
     delete:
       tags: [Album]
-      summary: Delete an album
+      summary: Soft-delete an album
       parameters:
         - $ref: "#/components/parameters/albumId"
       responses:
         "200":
-          description: Album deleted
+          description: Album soft-deleted
           content:
             application/json:
               schema:
@@ -1095,6 +1101,100 @@ paths:
                     example: success
         "400":
           description: Invalid album ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Album not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/album/trash:
+    get:
+      tags: [Album]
+      summary: List soft-deleted albums
+      responses:
+        "200":
+          description: Deleted albums
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  result:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Album"
+        "404":
+          description: No deleted albums found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: No deleted albums found
+
+  /api/album/{albumId}/restore:
+    patch:
+      tags: [Album]
+      summary: Restore a soft-deleted album
+      parameters:
+        - $ref: "#/components/parameters/albumId"
+      responses:
+        "200":
+          description: Album restored
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: "#/components/schemas/Album"
+        "400":
+          description: Invalid album ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Album not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/album/{albumId}/permanent:
+    delete:
+      tags: [Album]
+      summary: Permanently delete a soft-deleted album
+      parameters:
+        - $ref: "#/components/parameters/albumId"
+      responses:
+        "200":
+          description: Album permanently deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+        "400":
+          description: Invalid album ID or album not found/not soft-deleted
           content:
             application/json:
               schema:

@@ -16,6 +16,7 @@ A secure RESTful API for storing and managing photos and albums. Built with Node
 - Single and multi-photo upload (up to 10 files/request) via Cloudinary
 - Server-side image compression with Sharp before Cloudinary upload
 - Soft delete, trash listing, restore, and permanent delete for photos
+- Soft delete, trash listing, restore, and permanent delete for albums
 - Album management with user ownership checks
 - Add multiple photos to albums with ownership validation and duplicate-safe inserts
 - Album single-read includes populated album-photo relations with deleted-photo filtering
@@ -239,9 +240,12 @@ Global middleware: protect, isEmailVerified, needToChangePassword, apiLimiter
 
 - POST /album
 - GET /album
+- GET /album/trash
 - GET /album/:albumId
 - PATCH /album/:albumId
-- DELETE /album/:albumId
+- DELETE /album/:albumId (soft delete)
+- PATCH /album/:albumId/restore
+- DELETE /album/:albumId/permanent
 - PATCH /album/:albumId/addPhotos
 - DELETE /album/:albumId/removePhotos
 - GET /:userId/album
@@ -275,11 +279,6 @@ Response shape for `PATCH /album/:albumId/addPhotos`:
       "visibility": "private",
       "user": "userId",
       "createdAt": "2026-03-24T10:00:00.000Z"
-    },
-    "stats": {
-      "totalRequested": 3,
-      "inserted": 2,
-      "alreadyInAlbum": 1
     }
   }
 }
