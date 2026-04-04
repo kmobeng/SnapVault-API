@@ -28,6 +28,7 @@ A secure RESTful API for storing and managing photos and albums. Built with Node
 - Security middleware: Helmet, CORS, and route-level rate limiting
 - Interactive API documentation with Swagger (OpenAPI 3.0)
 - Structured request logging with Morgan + Winston
+- Health endpoint at `GET /api/health`
 
 ## Tech Stack
 
@@ -176,6 +177,7 @@ Notes:
 - Google OAuth users are created with `needToChangePassword=true`, so they must call `PATCH /api/user/change-password` before accessing routes protected by `needToChangePassword`.
 - Refreshed access tokens are delivered via HttpOnly cookies only; they are not included in JSON response bodies.
 - Signup role is not configurable by clients; accounts are created as user.
+- `GET /api/auth/google/redirect` returns a JSON success payload after Passport callback processing.
 
 Verify email request body:
 
@@ -241,9 +243,14 @@ visibility: public | private
 Notes:
 
 - Request bodies are validated with Zod schemas (title, description, visibility).
-- Files are compressed server-side before upload (resize cap: 1920px width, JPEG quality 80).
+- Files are compressed server-side before upload (resize cap: 1920px width, WEBP quality 80).
 - Multi-upload uses concurrent Cloudinary uploads and bulk DB insertion.
 - Permanent photo delete removes DB records first; Cloudinary cleanup is best-effort and logged if it fails.
+
+Response note:
+
+- `GET /photo` returns `{ message: "No photos found" }` when no records match.
+- `GET /photo/trash` returns `{ message: "No deleted photos found" }` when trash is empty.
 
 ### Album Routes (/api)
 
@@ -304,6 +311,7 @@ src/
   server.ts
   config/
   controller/
+  jobs/
   middleware/
   model/
   router/

@@ -179,6 +179,44 @@ security:
   - cookieAuth: []
 
 paths:
+  /:
+    get:
+      summary: Welcome endpoint
+      security: []
+      responses:
+        "200":
+          description: API welcome response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Welcome to SnapVault API
+
+  /api/health:
+    get:
+      summary: Health check
+      security: []
+      responses:
+        "200":
+          description: Service health response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: string
+                    example: healthy
+
   # ──────────────────────────── Auth ────────────────────────────
 
   /api/auth/signup:
@@ -378,8 +416,24 @@ paths:
       summary: Google OAuth callback
       security: []
       responses:
-        "302":
-          description: Redirects to client with session cookies
+        "200":
+          description: Google login/signup completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Logged in with Google successfully.
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: "#/components/schemas/User"
 
   /api/auth/verify-email:
     post:
@@ -511,7 +565,9 @@ paths:
                     type: string
                     example: success
                   data:
-                    $ref: "#/components/schemas/User"
+                    type: object
+                    allOf:
+                      - $ref: "#/components/schemas/User"
 
   /api/user/update-me:
     patch:
@@ -695,24 +751,30 @@ paths:
         - $ref: "#/components/parameters/fields"
       responses:
         "200":
-          description: List of photos
+          description: List of photos or no photos message
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: success
-                  result:
-                    type: integer
-                  data:
-                    type: object
+                oneOf:
+                  - type: object
                     properties:
-                      photos:
-                        type: array
-                        items:
-                          $ref: "#/components/schemas/Photo"
+                      status:
+                        type: string
+                        example: success
+                      result:
+                        type: integer
+                      data:
+                        type: object
+                        properties:
+                          photos:
+                            type: array
+                            items:
+                              $ref: "#/components/schemas/Photo"
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        example: No photos found
 
   /api/photo/trash:
     get:
@@ -720,24 +782,30 @@ paths:
       summary: List soft-deleted photos
       responses:
         "200":
-          description: Deleted photos
+          description: Deleted photos or empty-trash message
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: success
-                  result:
-                    type: integer
-                  data:
-                    type: object
+                oneOf:
+                  - type: object
                     properties:
-                      photos:
-                        type: array
-                        items:
-                          $ref: "#/components/schemas/Photo"
+                      status:
+                        type: string
+                        example: success
+                      result:
+                        type: integer
+                      data:
+                        type: object
+                        properties:
+                          photos:
+                            type: array
+                            items:
+                              $ref: "#/components/schemas/Photo"
+                  - type: object
+                    properties:
+                      message:
+                        type: string
+                        example: No deleted photos found
 
   /api/photo/{photoId}/restore:
     patch:
@@ -1234,17 +1302,7 @@ paths:
                     type: string
                     example: success
                   data:
-                    type: object
-                    properties:
-                      album:
-                        $ref: "#/components/schemas/Album"
-                    example:
-                      album:
-                        _id: 665a1b2c3d4e5f6a7b8c9d0a
-                        name: Vacation 2026
-                        visibility: public
-                        user: 665a1b2c3d4e5f6a7b8c9d0b
-                        createdAt: 2026-04-03T10:30:00.000Z
+                    $ref: "#/components/schemas/Album"
         "400":
           description: Validation error
           content:
