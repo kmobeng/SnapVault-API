@@ -3,10 +3,12 @@ dotenv.config();
 import app from "./app";
 import { connectDB } from "./config/db.config";
 import logger from "./config/wiston.config";
+import { initializeBackgroundJobs } from "./jobs";
 
 const startServer = async () => {
   try {
     await connectDB();
+    initializeBackgroundJobs();
 
     app.listen(process.env.PORT, () => {
       logger.info(`Server is listening on port ${process.env.PORT}`);

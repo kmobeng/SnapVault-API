@@ -24,6 +24,7 @@ A secure RESTful API for storing and managing photos and albums. Built with Node
 - Public signup always creates role user accounts (role is server-controlled)
 - Input validation with Zod schemas for request bodies across all endpoints
 - Redis caching for list/detail reads with SCAN-based cache invalidation on writes
+- Scheduled background purge for old soft-deleted photos
 - Security middleware: Helmet, CORS, and route-level rate limiting
 - Interactive API documentation with Swagger (OpenAPI 3.0)
 - Structured request logging with Morgan + Winston
@@ -106,6 +107,9 @@ EMAIL_FROM=SnapVault <noreply@yourdomain.com>
 # SendGrid (production)
 SENDGRID_USERNAME=apikey
 SENDGRID_PASSWORD=your_sendgrid_api_key
+
+# Background photo purge job
+PHOTO_PURGE_ENABLED=false
 ```
 
 `ACCESS_JWT_COOKIE_EXPIRES_IN` is interpreted in minutes by the code.
@@ -113,6 +117,13 @@ SENDGRID_PASSWORD=your_sendgrid_api_key
 `REFRESH_JWT_COOKIE_EXPIRES_IN` is interpreted in days.
 
 `CLOUDINARY_CLOUD_NAME` is currently hardcoded in the project config, so it is not required in `.env` unless you later move it to environment config.
+
+`PHOTO_PURGE_ENABLED` controls whether the scheduler starts at boot.
+
+The purge retention window and schedule are currently hardcoded in the server:
+
+- Retention window: 30 days
+- Schedule: daily at 02:00 (server time)
 
 > **Development email:** The app sends emails via a local SMTP server on `localhost:1025`. Use [Mailpit](https://mailpit.axllent.org) to catch and inspect emails locally.
 >
