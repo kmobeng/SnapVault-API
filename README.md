@@ -25,6 +25,7 @@ A secure RESTful API for storing and managing photos and albums. Built with Node
 - Input validation with Zod schemas for request bodies across all endpoints
 - Redis caching for list/detail reads with SCAN-based cache invalidation on writes
 - Scheduled background purge for old soft-deleted photos
+- Retry queue/worker for failed Cloudinary deletes (BullMQ + exponential backoff)
 - Security middleware: Helmet, CORS, and route-level rate limiting
 - Interactive API documentation with Swagger (OpenAPI 3.0)
 - Structured request logging with Morgan + Winston
@@ -40,6 +41,7 @@ A secure RESTful API for storing and managing photos and albums. Built with Node
 | Cache      | Redis (ioredis)                     |
 | Validation | Zod                                 |
 | Storage    | Cloudinary                          |
+| Jobs/Queue | node-cron, BullMQ                   |
 | Auth       | JWT, Passport.js (Google OAuth 2.0) |
 | Email      | Nodemailer                          |
 | Docs       | Swagger UI (OpenAPI 3.0)            |
@@ -110,7 +112,7 @@ SENDGRID_USERNAME=apikey
 SENDGRID_PASSWORD=your_sendgrid_api_key
 
 # Background photo purge job
-PHOTO_PURGE_ENABLED=false
+PHOTO_PURGE_ENABLED=true
 ```
 
 `ACCESS_JWT_COOKIE_EXPIRES_IN` is interpreted in minutes by the code.
@@ -245,7 +247,7 @@ Notes:
 - Request bodies are validated with Zod schemas (title, description, visibility).
 - Files are compressed server-side before upload (resize cap: 1920px width, WEBP quality 80).
 - Multi-upload uses concurrent Cloudinary uploads and bulk DB insertion.
-- Permanent photo delete removes DB records first; Cloudinary cleanup is best-effort and logged if it fails.
+- Permanent photo delete removes DB records first; failed Cloudinary cleanup is retried asynchronously through a BullMQ queue worker (5 attempts, exponential backoff from 5s).
 
 Response note:
 
@@ -291,13 +293,11 @@ Response shape for `PATCH /album/:albumId/addPhotos`:
 {
   "status": "success",
   "data": {
-    "album": {
-      "_id": "albumId",
-      "name": "Album Name",
-      "visibility": "private",
-      "user": "userId",
-      "createdAt": "2026-03-24T10:00:00.000Z"
-    }
+    "_id": "albumId",
+    "name": "Album Name",
+    "visibility": "private",
+    "user": "userId",
+    "createdAt": "2026-03-24T10:00:00.000Z"
   }
 }
 ```

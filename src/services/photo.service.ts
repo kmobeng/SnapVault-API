@@ -12,6 +12,7 @@ import {
   invalidatePhotosCache,
   invalidateSinglePhotoCache,
 } from "../utils/redis.util";
+import { enqueueCloudinaryDeleteRetryJob } from "../utils/cloudinaryDeleteQueue.util";
 
 const uploadCompressedPhotoToCloudinary = async (buffer: Buffer) => {
   const compressedBuffer = await sharp(buffer)
@@ -293,14 +294,30 @@ export const deletePhotoService = async (
     await PhotoAlbum.deleteMany({ photo: photo._id });
 
     // External cleanup is best-effort so DB delete does not fail on Cloudinary errors.
-    try {
-      await cloudinary.uploader.destroy(photo.publicId);
-    } catch (cloudinaryError) {
-      logger.error("Cloudinary cleanup failed after DB photo delete", {
-        photoId: String(photo._id),
-        publicId: photo.publicId,
-        error: cloudinaryError,
-      });
+    if (photo.publicId) {
+      try {
+        await cloudinary.uploader.destroy(photo.publicId);
+      } catch (cloudinaryError) {
+        logger.error("Cloudinary cleanup failed after DB photo delete", {
+          photoId: String(photo._id),
+          publicId: photo.publicId,
+          error: cloudinaryError,
+        });
+
+        try {
+          await enqueueCloudinaryDeleteRetryJob({
+            publicId: photo.publicId,
+            photoId: String(photo._id),
+            source: "photo-permanent-delete",
+          });
+        } catch (queueError) {
+          logger.error("Failed to enqueue Cloudinary delete retry job", {
+            photoId: String(photo._id),
+            publicId: photo.publicId,
+            error: queueError,
+          });
+        }
+      }
     }
 
     // Invalidate related Redis cache

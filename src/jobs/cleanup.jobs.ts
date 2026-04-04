@@ -8,6 +8,7 @@ import {
   invalidatePhotosCache,
   invalidateSinglePhotoCache,
 } from "../utils/redis.util";
+import { enqueueCloudinaryDeleteRetryJob } from "../utils/cloudinaryDeleteQueue.util";
 
 const DEFAULT_PURGE_CRON = "0 2 * * *";
 const DEFAULT_RETENTION_DAYS = 30;
@@ -28,6 +29,7 @@ const purgeExpiredSoftDeletedPhotos = async (retentionDays: number) => {
     eligible: 0,
     deleted: 0,
     cloudinaryFailed: 0,
+    cloudinaryRetryQueued: 0,
   };
 
   while (true) {
@@ -76,6 +78,21 @@ const purgeExpiredSoftDeletedPhotos = async (retentionDays: number) => {
           publicId: photo.publicId,
           error,
         });
+
+        try {
+          await enqueueCloudinaryDeleteRetryJob({
+            publicId: photo.publicId,
+            photoId: String(photo._id),
+            source: "scheduled-photo-purge",
+          });
+          summary.cloudinaryRetryQueued += 1;
+        } catch (queueError) {
+          logger.error("Failed to enqueue Cloudinary delete retry job", {
+            photoId: String(photo._id),
+            publicId: photo.publicId,
+            error: queueError,
+          });
+        }
       }
     }
 
