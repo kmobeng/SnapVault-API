@@ -25,7 +25,7 @@ A secure RESTful API for storing and managing photos and albums. Built with Node
 - Input validation with Zod schemas for request bodies across all endpoints
 - Redis caching for list/detail reads with SCAN-based cache invalidation on writes
 - Scheduled background purge for old soft-deleted photos
-- Retry queue/worker for failed Cloudinary deletes (BullMQ + exponential backoff)
+- Optional retry queue/worker for failed Cloudinary deletes (BullMQ + exponential backoff)
 - Security middleware: Helmet, CORS, and route-level rate limiting
 - Interactive API documentation with Swagger (OpenAPI 3.0)
 - Structured request logging with Morgan + Winston
@@ -113,6 +113,11 @@ SENDGRID_PASSWORD=your_sendgrid_api_key
 
 # Background photo purge job
 PHOTO_PURGE_ENABLED=true
+
+# Cloudinary delete retry queue/worker (BullMQ)
+# Defaults are disabled to minimize idle Redis command usage.
+CLOUDINARY_DELETE_RETRY_QUEUE_ENABLED=false
+CLOUDINARY_DELETE_RETRY_WORKER_ENABLED=false
 ```
 
 `ACCESS_JWT_COOKIE_EXPIRES_IN` is interpreted in minutes by the code.
@@ -122,6 +127,12 @@ PHOTO_PURGE_ENABLED=true
 `CLOUDINARY_CLOUD_NAME` is currently hardcoded in the project config, so it is not required in `.env` unless you later move it to environment config.
 
 `PHOTO_PURGE_ENABLED` controls whether the scheduler starts at boot.
+
+`CLOUDINARY_DELETE_RETRY_QUEUE_ENABLED` controls whether Cloudinary delete retry jobs are enqueued.
+
+`CLOUDINARY_DELETE_RETRY_WORKER_ENABLED` controls whether the BullMQ worker starts to process queued retry jobs.
+
+BullMQ queue/worker are opt-in and disabled by default to reduce background Redis command usage.
 
 The purge retention window and schedule are currently hardcoded in the server:
 
@@ -247,7 +258,7 @@ Notes:
 - Request bodies are validated with Zod schemas (title, description, visibility).
 - Files are compressed server-side before upload (resize cap: 1920px width, WEBP quality 80).
 - Multi-upload uses concurrent Cloudinary uploads and bulk DB insertion.
-- Permanent photo delete removes DB records first; failed Cloudinary cleanup is retried asynchronously through a BullMQ queue worker (5 attempts, exponential backoff from 5s).
+- Permanent photo delete removes DB records first; failed Cloudinary cleanup is retried asynchronously through BullMQ only when `CLOUDINARY_DELETE_RETRY_QUEUE_ENABLED=true` and `CLOUDINARY_DELETE_RETRY_WORKER_ENABLED=true` (5 attempts, exponential backoff from 5s).
 
 Response note:
 

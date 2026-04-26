@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: SnapVault API
-  description: A secure RESTful API for storing and managing photos and albums.
+  description: A secure RESTful API for storing and managing photos and albums. Cloudinary delete retry jobs use BullMQ and are opt-in via CLOUDINARY_DELETE_RETRY_QUEUE_ENABLED and CLOUDINARY_DELETE_RETRY_WORKER_ENABLED.
   version: 1.0.0
 
 servers:
@@ -837,7 +837,7 @@ paths:
     delete:
       tags: [Photo]
       summary: Permanently delete a photo
-      description: Removes the photo from DB and Cloudinary. Available to admin and photo owner.
+      description: Removes the photo from DB and attempts Cloudinary delete immediately. Failed Cloudinary deletes are retried asynchronously only when BullMQ retry queue and worker are enabled via environment flags.
       parameters:
         - $ref: "#/components/parameters/photoId"
       responses:
@@ -1289,7 +1289,8 @@ paths:
                     type: string
                     pattern: ^[0-9a-fA-F]{24}$
                   minItems: 1
-                  example: ["665a1b2c3d4e5f6a7b8c9d0e", "665a1b2c3d4e5f6a7b8c9d0f"]
+                  example:
+                    ["665a1b2c3d4e5f6a7b8c9d0e", "665a1b2c3d4e5f6a7b8c9d0f"]
       responses:
         "200":
           description: Photos added
