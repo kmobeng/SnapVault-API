@@ -32,11 +32,9 @@ export const revokeShareLinksForAlbumService = async (
     !mongoose.Types.ObjectId.isValid(userId)
   ) {
     throw createError("Invalid album ID or user ID", 400);
-
-    return;
   }
 
-  await ShareLink.updateMany(
+  await ShareLink.updateOne(
     {
       album: albumId,
       user: userId,
@@ -74,6 +72,18 @@ export const createAlbumShareLinkService = async (
   const rawToken = crypto.randomBytes(32).toString("hex");
   const tokenHash = hashShareToken(rawToken);
   const expiresAt = calculateExpiresAt(expiresIn);
+
+  // One active link per album: revoke previous active link before issuing a new one.
+  await ShareLink.updateOne(
+    {
+      album: albumId,
+      user: userId,
+      revokedAt: null,
+    },
+    {
+      $set: { revokedAt: new Date() },
+    },
+  );
 
   const createdShareLink = await ShareLink.create({
     album: albumId,
@@ -151,41 +161,6 @@ export const getSharedAlbumByTokenService = async (token: string) => {
   };
 };
 
-export const listAlbumShareLinksService = async (
-  albumId: string,
-  userId: string,
-) => {
-  if (!mongoose.Types.ObjectId.isValid(albumId)) {
-    throw createError("Invalid album ID", 400);
-  }
-
-  const album = await Album.findOne({
-    _id: albumId,
-    user: userId,
-    isDeleted: false,
-  }).select("_id");
-
-  if (!album) {
-    throw createError("Album not found", 404);
-  }
-
-  const links = await ShareLink.find({
-    album: albumId,
-    user: userId,
-  })
-    .sort({ createdAt: -1 })
-    .lean();
-
-  return links.map((link) => ({
-    id: String(link._id),
-    expiresAt: link.expiresAt,
-    revokedAt: link.revokedAt,
-    createdAt: link.createdAt,
-    isExpired: Boolean(link.expiresAt && link.expiresAt.getTime() < Date.now()),
-    isRevoked: Boolean(link.revokedAt),
-  }));
-};
-
 export const revokeSingleAlbumShareLinkService = async (
   albumId: string,
   userId: string,
@@ -218,39 +193,5 @@ export const revokeSingleAlbumShareLinkService = async (
   return {
     id: String(shareLink._id),
     revokedAt: shareLink.revokedAt,
-  };
-};
-
-export const revokeAllAlbumShareLinksService = async (
-  albumId: string,
-  userId: string,
-) => {
-  if (!mongoose.Types.ObjectId.isValid(albumId)) {
-    throw createError("Invalid album ID", 400);
-  }
-
-  const album = await Album.findOne({
-    _id: albumId,
-    user: userId,
-    isDeleted: false,
-  }).select("_id");
-
-  if (!album) {
-    throw createError("Album not found", 404);
-  }
-
-  const result = await ShareLink.updateMany(
-    {
-      album: albumId,
-      user: userId,
-      revokedAt: null,
-    },
-    {
-      $set: { revokedAt: new Date() },
-    },
-  );
-
-  return {
-    revokedCount: result.modifiedCount,
   };
 };

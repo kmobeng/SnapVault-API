@@ -4,8 +4,6 @@ import { shareLinkCreateSchema } from "../validators/shareLink.validators";
 import {
   createAlbumShareLinkService,
   getSharedAlbumByTokenService,
-  listAlbumShareLinksService,
-  revokeAllAlbumShareLinksService,
   revokeSingleAlbumShareLinkService,
 } from "../services/shareLink.service";
 
@@ -65,32 +63,6 @@ export const getSharedAlbumByToken = async (
   }
 };
 
-export const listAlbumShareLinks = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { albumId } = req.params;
-    if (!albumId) {
-      throw createError("No album ID provided", 400);
-    }
-
-    const links = await listAlbumShareLinksService(
-      albumId,
-      req.currentUser._id.toString(),
-    );
-
-    res.status(200).json({
-      status: "success",
-      result: links.length,
-      data: { links },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
 export const revokeSingleAlbumShareLink = async (
   req: Request,
   res: Response,
@@ -111,31 +83,6 @@ export const revokeSingleAlbumShareLink = async (
     res.status(200).json({
       status: "success",
       data: { link },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const revokeAllAlbumShareLinks = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const { albumId } = req.params;
-    if (!albumId) {
-      throw createError("No album ID provided", 400);
-    }
-
-    const result = await revokeAllAlbumShareLinksService(
-      albumId,
-      req.currentUser._id.toString(),
-    );
-
-    res.status(200).json({
-      status: "success",
-      data: result,
     });
   } catch (error) {
     next(error);

@@ -30,6 +30,13 @@ const ShareLinkSchema = new Schema({
 ShareLinkSchema.index({ tokenHash: 1 }, { unique: true });
 ShareLinkSchema.index({ album: 1, user: 1, createdAt: -1 });
 ShareLinkSchema.index({ album: 1, user: 1, revokedAt: 1 });
+ShareLinkSchema.index(
+  { album: 1, user: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { revokedAt: null },
+  },
+);
 
 export type IShareLink = InferSchemaType<typeof ShareLinkSchema>;
 

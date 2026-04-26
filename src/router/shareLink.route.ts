@@ -8,8 +8,6 @@ import {
 import {
   createAlbumShareLink,
   getSharedAlbumByToken,
-  listAlbumShareLinks,
-  revokeAllAlbumShareLinks,
   revokeSingleAlbumShareLink,
 } from "../controller/shareLink.controller";
 
@@ -25,8 +23,6 @@ router.use(apiLimiter);
 router
   .route("/album/:albumId/share")
   .post(createAlbumShareLink)
-  .get(listAlbumShareLinks)
-  .delete(revokeAllAlbumShareLinks);
 
 router
   .route("/album/:albumId/share/:shareLinkId")
