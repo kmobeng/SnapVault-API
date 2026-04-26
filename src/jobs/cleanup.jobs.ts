@@ -73,11 +73,7 @@ const purgeExpiredSoftDeletedPhotos = async (retentionDays: number) => {
         await cloudinary.uploader.destroy(photo.publicId);
       } catch (error) {
         summary.cloudinaryFailed += 1;
-        logger.error("Cloudinary cleanup failed after scheduled DB purge", {
-          photoId: String(photo._id),
-          publicId: photo.publicId,
-          error,
-        });
+        
 
         try {
           await enqueueCloudinaryDeleteRetryJob({

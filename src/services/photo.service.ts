@@ -77,7 +77,6 @@ export const uploadPhotoService = async (
     if (publicId) {
       try {
         await cloudinary.uploader.destroy(publicId);
-        logger.info("Cloudinary cleanup successful");
       } catch (deleteError) {
         logger.error("Failed to cleanup Cloudinary:", deleteError);
       }
@@ -325,9 +324,7 @@ export const deletePhotoService = async (
     await invalidateSinglePhotoCache(photoId);
 
     await Promise.all(
-      albumIds.map((albumId) =>
-        invalidateAlbumCache(String(albumId)),
-      ),
+      albumIds.map((albumId) => invalidateAlbumCache(String(albumId))),
     );
 
     return photo;
