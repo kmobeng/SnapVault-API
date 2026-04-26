@@ -1,6 +1,6 @@
 **Live API URL:** [https://snapvault-api.up.railway.app/](https://snapvault-api.up.railway.app/)
 
-**Interactive API Docs:** [Swagger UI](https://snapvault-api.up.railway.app/api/docs)
+**Interactive API Docs:** [Swagger UI](https://snapvault-api-13ar.onrender.com/api/docs)
 
 # SnapVault
 

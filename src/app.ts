@@ -6,6 +6,7 @@ import userRoute from "./router/user.route";
 import photoRoute from "./router/photo.route";
 import albumRoute from "./router/album.route";
 import authRoute from "./router/auth.route";
+import shareLinkRoute from "./router/shareLink.route";
 import "./config/passport.config";
 import cookieSession from "cookie-session";
 import passport from "passport";
@@ -86,7 +87,7 @@ app.get("/api/health", (_req: Request, res: Response) => {
 app.use("/api/auth", authRoute);
 
 app.use("/api/user", userRoute);
-app.use("/api/", albumRoute, photoRoute);
+app.use("/api/", albumRoute, photoRoute, shareLinkRoute);
 
 app.use(errorHandler);
 
