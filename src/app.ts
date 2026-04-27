@@ -87,10 +87,9 @@ app.get("/api/health", (_req: Request, res: Response) => {
 app.use("/api/auth", authRoute);
 
 app.use("/api/user", userRoute);
-app.use("/api/", albumRoute, photoRoute, shareLinkRoute);
+app.use("/api/", shareLinkRoute);
+app.use("/api/", albumRoute, photoRoute);
 
 app.use(errorHandler);
 
 export default app;
-
-// add a feature where user can add photos to album when uploading it
