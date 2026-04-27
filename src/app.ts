@@ -92,3 +92,5 @@ app.use("/api/", albumRoute, photoRoute, shareLinkRoute);
 app.use(errorHandler);
 
 export default app;
+
+// add a feature where user can add photos to album when uploading it

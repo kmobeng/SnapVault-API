@@ -115,8 +115,8 @@ export const updateSingleAlbum = async (
     }
 
     const userId = req.params.userId || req.currentUser._id.toString();
-    const { name } = parsed.data;
-    const album = await updateSingleAlbumService(albumId, userId, name);
+    const { name,visibility } = parsed.data;
+    const album = await updateSingleAlbumService(albumId, userId, name,visibility);
 
     res.status(200).json({ status: "success", data: album });
   } catch (error) {

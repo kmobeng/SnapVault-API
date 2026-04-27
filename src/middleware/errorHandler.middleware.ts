@@ -39,7 +39,7 @@ export const errorHandler = (
 
   if (err.code === 11000) {
     console.log("keyPattern:", err.keyPattern);
-  console.log("keyValue:", err.keyValue);
+    console.log("keyValue:", err.keyValue);
     statusCode = 400;
     isOperational = true;
     const duplicateField = Object.keys(err.keyPattern || {})[0];
@@ -47,9 +47,13 @@ export const errorHandler = (
       ? err.keyValue?.[duplicateField]
       : undefined;
 
-    errorMessage = duplicateField
-      ? `${duplicateField}: ${duplicateValue} already exists. Please use a different value.`
-      : "Duplicate value already exists. Please use a different value.";
+    if (err.keyPattern?.user && err.keyPattern?.name) {
+      errorMessage = "Album name already exists for this user.";
+    } else {
+      errorMessage = duplicateField
+        ? `${duplicateField}: ${duplicateValue} already exists. Please use a different value.`
+        : "Duplicate value already exists. Please use a different value.";
+    }
   }
 
   if (err.name === "ValidationError") {

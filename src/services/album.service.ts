@@ -220,7 +220,8 @@ export const removePhotosFromAlbumService = async (
 export const updateSingleAlbumService = async (
   albumId: string,
   userId: string,
-  name: string,
+  name?: string,
+  visibility?: string,
 ) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(albumId)) {
@@ -229,7 +230,7 @@ export const updateSingleAlbumService = async (
 
     const album = await Album.findOneAndUpdate(
       { _id: albumId, user: userId, isDeleted: false },
-      { $set: { name } },
+      { $set: { name,visibility } },
       { new: true, runValidators: true },
     );
     if (!album) {

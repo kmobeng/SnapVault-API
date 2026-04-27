@@ -10,7 +10,12 @@ export const createAlbumSchema = z.object({
 });
 
 export const updateAlbumSchema = z.object({
-  name: z.string().min(1, "Album name is required"),
+  name: z.string().min(1, "Album name is required").optional(),
+  visibility: z
+    .enum(["private", "public"], {
+      message: "Visibility must be 'private' or 'public'",
+    })
+    .optional(),
 });
 
 export const albumPhotosSchema = z.object({

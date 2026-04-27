@@ -27,7 +27,6 @@ const ShareLinkSchema = new Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-ShareLinkSchema.index({ tokenHash: 1 }, { unique: true });
 ShareLinkSchema.index({ album: 1, user: 1, createdAt: -1 });
 ShareLinkSchema.index({ album: 1, user: 1, revokedAt: 1 });
 ShareLinkSchema.index(
