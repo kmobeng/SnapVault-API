@@ -20,9 +20,7 @@ router.use(isEmailVerified);
 router.use(needToChangePassword);
 router.use(apiLimiter);
 
-router
-  .route("/album/:albumId/share")
-  .post(createAlbumShareLink)
+router.route("/album/:albumId/share").post(createAlbumShareLink);
 
 router
   .route("/album/:albumId/share/:shareLinkId")

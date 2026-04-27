@@ -18,6 +18,7 @@ A secure RESTful API for storing and managing photos and albums. Built with Node
 - Soft delete, trash listing, restore, and permanent delete for photos
 - Soft delete, trash listing, restore, and permanent delete for albums
 - Album management with user ownership checks
+- Shareable public album links with single active link per album
 - Add multiple photos to albums with ownership validation and duplicate-safe inserts
 - Album single-read includes populated album-photo relations with deleted-photo filtering
 - Role-based authorization for admin actions
@@ -312,6 +313,23 @@ Response shape for `PATCH /album/:albumId/addPhotos`:
   }
 }
 ```
+
+### Share Link Routes (/api)
+
+Public route:
+
+- GET /share/:token
+
+Owner routes (protected):
+
+- POST /album/:albumId/share
+- DELETE /album/:albumId/share/:shareLinkId
+
+Notes:
+
+- Albums must be public to create a share link.
+- Only one active link exists per album. Creating a new link revokes the previous active link.
+- Links expire based on the `expiresIn` option; expired links return 410.
 
 ## Project Structure
 

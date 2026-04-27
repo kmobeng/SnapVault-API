@@ -114,6 +114,30 @@ components:
           format: date-time
           nullable: true
 
+    ShareLink:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 665a1b2c3d4e5f6a7b8c9d0e
+        token:
+          type: string
+          example: 6f1d7f0f48e34e1f9b2f7b6ddf5c6b2b1d2a3c4e5f6a7b8c9d0e1f2a3b4c5d6e
+        sharePath:
+          type: string
+          example: /api/share/6f1d7f0f48e34e1f9b2f7b6ddf5c6b2b1d2a3c4e5f6a7b8c9d0e1f2a3b4c5d6e
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        revokedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
     Error:
       type: object
       properties:
@@ -939,6 +963,143 @@ paths:
                     example: success
         "404":
           description: Photo not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  # ──────────────────────────── Share Links ────────────────────────────
+
+  /api/share/{token}:
+    get:
+      tags: [Album]
+      summary: Get shared album by token
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Shared album data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      album:
+                        $ref: "#/components/schemas/Album"
+                      shareLink:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          expiresAt:
+                            type: string
+                            format: date-time
+                            nullable: true
+                          createdAt:
+                            type: string
+                            format: date-time
+        "404":
+          description: Invalid or revoked share link
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "410":
+          description: Share link expired
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/album/{albumId}/share:
+    post:
+      tags: [Album]
+      summary: Create a share link for a public album
+      description: Only one active share link exists per album. Creating a new link revokes the previous active link.
+      parameters:
+        - $ref: "#/components/parameters/albumId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expiresIn:
+                  type: string
+                  enum: [1d, 7d, 30d, never]
+                  default: 7d
+      responses:
+        "201":
+          description: Share link created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      shareLink:
+                        $ref: "#/components/schemas/ShareLink"
+        "400":
+          description: Validation error or album not public
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/album/{albumId}/share/{shareLinkId}:
+    delete:
+      tags: [Album]
+      summary: Revoke the current share link
+      parameters:
+        - $ref: "#/components/parameters/albumId"
+        - name: shareLinkId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9a-fA-F]{24}$
+          description: MongoDB ObjectId of the share link
+      responses:
+        "200":
+          description: Share link revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      link:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          revokedAt:
+                            type: string
+                            format: date-time
+        "404":
+          description: Share link not found or already revoked
           content:
             application/json:
               schema:
