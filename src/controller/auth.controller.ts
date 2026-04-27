@@ -20,7 +20,7 @@ import {
 const setAccessTokenCookieOptions = () => {
   const cookieOptions: any = {
     expires: new Date(
-      Date.now() + Number(process.env.ACCESS_JWT_COOKIE_EXPIRES_IN) * 60 * 1000,
+      Date.now() + Number(process.env.ACCESS_JWT_COOKIE_EXPIRES_IN) *60 * 60 * 1000,
     ),
     // secure: true,
     httpOnly: true,
