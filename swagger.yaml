@@ -19,6 +19,8 @@ tags:
     description: Photo upload, retrieval, and lifecycle
   - name: Album
     description: Album management and photo-album relations
+  - name: ShareLink
+    description: Public album sharing and link management
 
 components:
   securitySchemes:
@@ -972,7 +974,7 @@ paths:
 
   /api/share/{token}:
     get:
-      tags: [Album]
+      tags: [ShareLink]
       summary: Get shared album by token
       security: []
       parameters:
@@ -1024,7 +1026,7 @@ paths:
 
   /api/album/{albumId}/share:
     post:
-      tags: [Album]
+      tags: [ShareLink]
       summary: Create a share link for a public album
       description: Only one active share link exists per album. Creating a new link revokes the previous active link.
       parameters:
@@ -1065,7 +1067,7 @@ paths:
 
   /api/album/{albumId}/share/{shareLinkId}:
     delete:
-      tags: [Album]
+      tags: [ShareLink]
       summary: Revoke the current share link
       parameters:
         - $ref: "#/components/parameters/albumId"

@@ -157,6 +157,40 @@ npm run build
 npm run start
 ```
 
+### Testing
+
+These tests use your existing environment variables (loaded from `.env`).
+
+Required env vars for tests:
+
+```env
+DB_URL=...
+JWT_SECRET=...
+ACCESS_JWT_EXPIRES_IN=...
+ACCESS_JWT_COOKIE_EXPIRES_IN=...
+REFRESH_JWT_COOKIE_EXPIRES_IN=...
+COOKIE_KEY=...
+```
+
+Tests use the real database and clean up after the suite completes. External services are mocked:
+
+- Redis is mocked in-memory
+- Cloudinary upload/delete is mocked
+- BullMQ queue/worker and cron scheduling are mocked
+
+Commands:
+
+```bash
+# Run all tests
+npm test
+
+# Run the current test subset (all files in src/tests)
+npm run test:vital
+
+# Watch mode
+npm run test:watch
+```
+
 ## Security and Access Rules
 
 - Passwords are hashed with bcrypt.
