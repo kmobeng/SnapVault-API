@@ -23,6 +23,7 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 
 COPY --from=build /app/dist ./dist
+COPY --from=build /app/swagger.yaml ./swagger.yaml
 
 EXPOSE 4000
 
